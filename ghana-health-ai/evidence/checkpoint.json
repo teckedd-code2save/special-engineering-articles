@@ -1,0 +1,168 @@
+{
+  "schema_version": 1,
+  "project": "ghana-health-ai",
+  "written_on": "2026-10-16",
+  "research_checkpoint": "2026-10-11",
+  "is_live_status": false,
+  "all_four_collections_ready": false,
+  "reliable_independent_response_model_demonstrated": false,
+  "interactive_execution_map_implemented": false,
+  "source_inventory": {
+    "rows": 1178118,
+    "meaning": "Frozen source inventory, not qualified training examples",
+    "manifest_sha256": "ddc88cb47302905d98d74d7e08f66856dd397836479619691c13e40a12e83866"
+  },
+  "instruction_working_copy": {
+    "records": 52002,
+    "complete_corrections_applied": 24,
+    "additional_partially_corrected_records": 37,
+    "partial_term_field_edits": 42,
+    "substantively_edited_records": 61,
+    "false_empty_markers_removed": 31323,
+    "direct_marker_operations": 31311,
+    "marker_removals_inside_complete_edits": 12,
+    "unique_changed_records": 31344,
+    "protected_or_excluded_records": 26509,
+    "new_training_admissions": 0,
+    "private_backup_files_verified_in_saved_receipt": 8,
+    "manifest_sha256": "ec008f4fbe2276c2db8240f5bf7411d60d30ea2e8062d6bfef753d6e42b38ebb"
+  },
+  "consolidation": {
+    "node": "B",
+    "status": "complete",
+    "input_memberships": 3736,
+    "instruction_memberships": 2737,
+    "unique_instruction_sources_with_findings": 1848,
+    "nonprotected_work_items": 674,
+    "protected_or_excluded_sources_with_findings": 1174,
+    "other_collection_items": 999,
+    "conversation_message_items": 961,
+    "english_retention_items": 38,
+    "unflagged_sampling_pool": 24819,
+    "work_items_with_complete_edits": 16,
+    "work_items_with_partial_edits": 20,
+    "work_items_without_substantive_edits": 638,
+    "new_corrections": 0,
+    "new_training_admissions": 0,
+    "private_backup_files_verified_in_saved_receipt": 9,
+    "manifest_sha256": "0eae6501941a15da4a5ba0caa7e7fbe91b22b139c74206a6bc8b14f852600cea"
+  },
+  "language_export": {
+    "version": "twi-language-v1-20260929",
+    "train_records": 42124,
+    "validation_records": 826,
+    "train_content_tokens": 735652,
+    "train_nonlexical_content_tokens": 457120,
+    "train_lexical_records": 25378,
+    "later_supplement_not_merged_into_these_counts": true
+  },
+  "conversation_recovery": {
+    "messages": 3200,
+    "histories": 1565,
+    "protected_histories": 1214,
+    "complete_proposals": 13,
+    "other_pending_histories": 338,
+    "new_training_admissions": 0
+  },
+  "health_recovery": {
+    "sources": 11116,
+    "train_split_review_sources": 4168,
+    "validation_sources": 92,
+    "protected_sources": 6856,
+    "twi_train_sources": 957,
+    "english_train_sources": 3211,
+    "twi_train_sources_missing_english_meanings": 895
+  },
+  "controlled_tools": {
+    "source_cases": 45,
+    "bilingual_candidate_histories": 90,
+    "executed_results": 210,
+    "catalogue_products": 5,
+    "simulated": true,
+    "real_purchases": 0
+  },
+  "selected_benchmarks": {
+    "afrique_native_comparison": {
+      "nli_cases_per_language": 450,
+      "twi_correct_base": 211,
+      "twi_correct_cpt": 214,
+      "english_correct_base": 392,
+      "english_correct_cpt": 361,
+      "translation_pairs_per_direction": 32,
+      "en_to_twi_chrf_pp_base": 9.11,
+      "en_to_twi_chrf_pp_cpt": 41.47,
+      "twi_to_en_chrf_pp_base": 22.92,
+      "twi_to_en_chrf_pp_cpt": 48.31
+    },
+    "alignment_20260928": {
+      "optimizer_updates": 200,
+      "minutes": 69.93,
+      "en_to_twi_chrf_pp_base": 7.9166,
+      "en_to_twi_chrf_pp_adapted": 6.9906,
+      "twi_to_en_chrf_pp_base": 20.7151,
+      "twi_to_en_chrf_pp_adapted": 20.8303,
+      "english_loss_ratio": 0.9523,
+      "advancement_gate_passed": false
+    },
+    "native_20260930": {
+      "optimizer_updates": 561,
+      "train_examples": 17938,
+      "twi_loss_base": 6.145030,
+      "twi_loss_adapted": 2.369211,
+      "english_loss_base": 1.318064,
+      "english_loss_adapted": 1.106109,
+      "development_cases": 30,
+      "advancement_gate_passed": false,
+      "report_results_sha256": "1ad1af7ea01bfa09c4f795eb2374d4f5bdaca465712bd3d393307f038928db4c"
+    },
+    "response_20261003": {
+      "optimizer_updates": 662,
+      "train_examples": 21170,
+      "twi_train_examples": 14298,
+      "english_train_examples": 6872,
+      "twi_loss_base": 2.232587,
+      "twi_loss_adapted": 1.459290,
+      "english_retention_loss_base": 1.317664,
+      "english_retention_loss_adapted": 1.112312,
+      "english_reference_loss_base": 1.195671,
+      "english_reference_loss_adapted": 0.978049,
+      "development_cases": 34,
+      "repetition_flags_base": 3,
+      "repetition_flags_adapted": 5,
+      "new_repetition_flags": 3,
+      "production_eligible": false,
+      "metrics_sha256": "59e5c37b6eb272b08f2282f12157eba89e96c18e6c9abe535c3c2631ad9c3332"
+    }
+  },
+  "execution_nodes": {
+    "A": "complete",
+    "B": "complete",
+    "C": "next",
+    "D": "pending",
+    "E": "pending",
+    "F": "pending_per_example",
+    "H": "conditional",
+    "Q": "conditional",
+    "G": "pending",
+    "I": "pending",
+    "J": "pending",
+    "K": "future_outside_collection_pass"
+  },
+  "publication_verification": {
+    "date": "2026-10-16",
+    "focused_tests_passed": 67,
+    "new_model_evaluation_run": false,
+    "new_training_run": false,
+    "full_application_ci_claimed": false,
+    "current_production_routing_verified": false
+  },
+  "limitations": [
+    "Collections and task views overlap; their row totals cannot be summed.",
+    "Mechanical repairs and software tests do not certify Twi meanings.",
+    "Unflagged records are not approved records.",
+    "Historical benchmarks have different prompts, populations, objectives and decoding contracts.",
+    "Known development checks are not untouched evaluation data.",
+    "Lower prediction loss is not response accuracy.",
+    "Public article metadata does not disclose or relicense private research artifacts."
+  ]
+}
