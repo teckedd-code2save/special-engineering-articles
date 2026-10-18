@@ -11,3 +11,7 @@ status or a claim that unfinished research has succeeded.
 - [Ghana Health AI: building a general-purpose Twi assistant](ghana-health-ai/README.md)
   - A detailed research and engineering series covering data, adaptation,
     benchmarks, correction infrastructure, and the remaining path to training.
+- [Ship Without CI: from manual runbook to a scoped release capability](ship-without-ci/README.md)
+  - A two-part series: the SSH + Compose + GHCR fallback runbook, and the
+    OAuth-gated MCP release tools plus off-host Docker Agentic Platform build
+    executor that turn that runbook into a machine-callable capability.
