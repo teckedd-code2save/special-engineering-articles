@@ -27,7 +27,10 @@ tools, with the build moved into an ephemeral amd64 Docker Agentic Platform
 sandbox so it never competes with production for CPU or RAM. A real build of a
 private deployment produced two digest-pinned images in one sandbox in about
 three and a half minutes, and the worker that marked that success as a failure
-was fixed by running it, not by reading the schema.
+was fixed by running it, not by reading the schema. Build operations now retain
+complete redacted stdout and stderr per phase instead of a truncated tail, the
+BuildKit path publishes reliably through one isolated Docker configuration, and
+shared image variables advance together even under Compose defaults.
 
 ## Publication Boundaries
 

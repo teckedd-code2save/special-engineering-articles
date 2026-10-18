@@ -31,7 +31,7 @@ The consequence is the one part 1 asked for: the agent gets release capability w
 
 ## The Build Executor: Why a Sandbox, and Why Docker AP
 
-The naive version of `build_publish` builds on the VPS, right next to the running app. A `docker compose build` there competes with production for CPU and RAM; an uncapped build is how a deploy tool "hijacks resources" and destabilizes the host it is supposed to protect.
+The naive version of `build_publish` builds on the VPS, right next to the running app. A `docker compose build` there competes with production for CPU and RAM; an uncapped build is how a deploy tool "hijacks resources" and destabilizes the host it is supposed to protect. There are two builders worth distinguishing: `buildkit` (the default — a dedicated, resource-capped BuildKit builder on the host) and `docker-agentic` (the off-host sandbox below). The BuildKit path got its own reliability pass: it now uses the same isolated Docker configuration across builder discovery, registry login, publishing, and pull-to-verify, and it publishes the selected Compose targets directly from BuildKit rather than through a sidecar build.
 
 The two off-box candidates were evaluated with a live probe, not a brochure:
 
@@ -75,8 +75,16 @@ A real `deployment.build_publish` against the RentAWeekend deployment (private r
 
 The sandbox was destroyed afterward, and the production workload was never touched.
 
+## Build Evidence, Not Just a Digest
+
+A digest proves an artifact exists; it does not prove the build was clean. A follow-on pass made the operation's evidence as complete as the manual runbook demanded:
+
+- **Full output, not the tail.** Build operations retain complete redacted stdout and stderr per phase in `evidence.logs` (and `result.logs` on success). The short error string is derived from the final output lines — it is not the stored log. JSON evidence is never truncated as a serialized string, and host command capture drains both streams past the ~1 MiB limit that `child_process.exec` otherwise imposes.
+- **One test run per distinct image.** Requested tests execute once per distinct image, not once per service, with both output streams recorded — so an `api`/`migrate`/`worker` image is tested once, not three times.
+- **Shared image variables advance together.** On release, a variable now matches even when the Compose file declares a default or a required-value message (`${API_IMAGE:-fallback}`, `${API_IMAGE?error}`), so the `api` and `worker` references move to the same digest instead of one silently lagging.
+
 ## What This Does and Does Not Prove
 
 Proven: the runbook is now a machine-callable capability with the same evidence and reversibility the manual path demanded, and the image build runs entirely off the production host.
 
-Not yet proven, and the next nodes: a zero-downtime switch, test-gated promotion on a live change (the tests path is wired but was `skipped` in this run), and rollback of a schema-changing release. Those are separate from "does the isolated builder work," and they should be measured the same way — by running them, not by reading the schema.
+Not yet proven end-to-end, and the next nodes: a zero-downtime switch, a test-gated promotion on a live change (the tests path is wired to run once per distinct image with full evidence, but was not exercised against a live deployment in this series), and rollback of a schema-changing release. Those are separate from "does the isolated builder work," and they should be measured the same way — by running them, not by reading the schema.
