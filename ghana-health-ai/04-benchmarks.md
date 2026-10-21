@@ -4,6 +4,10 @@
 
 **Compiled 16 October 2026 from records through the 11 October checkpoint.**
 
+These historical benchmark values are unchanged. The
+[20 October correction checkpoint](06-corpus-correction-checkpoint-20261020.md)
+reports data repair and software checks, not a newly trained or evaluated model.
+
 ## How to Read This Record
 
 This is an experiment ledger, not a leaderboard. It covers the recoverable

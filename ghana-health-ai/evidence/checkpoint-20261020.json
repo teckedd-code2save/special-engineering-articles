@@ -1,0 +1,81 @@
+{
+  "schema_version": 1,
+  "project": "ghana-health-ai",
+  "written_on": "2026-10-21",
+  "research_checkpoint": "2026-10-20",
+  "checkpoints": { "corrections": "D49", "meaning_assessments": "E48" },
+  "is_live_status": false,
+  "all_four_collections_ready": false,
+  "reliable_independent_response_model_demonstrated": false,
+  "interactive_execution_map_implemented": true,
+  "historical_benchmarks": "checkpoint.json",
+  "instruction_working_copy": {
+    "records": 52002,
+    "protected_or_excluded_records": 26509,
+    "uninspected_sampling_pool_sources": 24790
+  },
+  "diagnostic_inspection": {
+    "strata": 12,
+    "complete_examples_inspected": 29,
+    "new_handoff_items": 25,
+    "population_accuracy_estimate": null
+  },
+  "correction_queue": {
+    "original_work_items": 699,
+    "distinct_replaced": 646,
+    "retained": 28,
+    "pending": 25,
+    "pending_source_reference_adjudications": 13,
+    "pending_contextual_examples": 12,
+    "newest_batch_replacements": 9,
+    "corrected_english_derivatives": 122,
+    "training_admissions": 0
+  },
+  "meaning_assessments": {
+    "current_complete_handoffs": 674,
+    "assessed": 674,
+    "unassessed_current_handoffs": 0,
+    "scoped_agent_pass_to_F": 671,
+    "source_hold": 2,
+    "focused_twi_check": 1,
+    "assessment_kind": "same-agent full-source comparison",
+    "meaning_accuracy_estimate": null,
+    "independent_native_certification": false,
+    "human_whole_example_approvals_claimed_by_pass": 0
+  },
+  "handoff_target_kinds": {
+    "language_exercises": 355,
+    "twi_prose": 259,
+    "code_exercises": 39,
+    "literal_labels": 14,
+    "literal_structure": 1,
+    "legacy_unlabelled": 6
+  },
+  "evidence": {
+    "D_manifest_sha256": "d555356db371603b1fb5b3b3b54bd213c519d3c4be91de7cb6a5f019f321aeae",
+    "E_manifest_sha256": "7baa35119c0f056974cd87b3b4f1351ad44ed9c8647d2b86e18cf7d749292b9f",
+    "review_queue_sha256": "6a97c64bc491a448dea2d4654c448fc8b24c59ad466f379b77f6436832f5bf97",
+    "private_continuation_packages_since_D34_E33": 32,
+    "remote_files_verified_in_saved_receipts": 288,
+    "newest_D49_E48_remote_files_verified": 18,
+    "new_review_projection_tests_passed": 12
+  },
+  "publication_verification": {
+    "date": "2026-10-21",
+    "application_pr": "https://github.com/teckedd-code2save/ghana-health-ai/pull/41",
+    "application_commit": "52ea8c1eeb1f550629bbf9fa16558251b12ab6c5",
+    "application_pr_status_at_check": "open_draft_ci_and_security_passed",
+    "new_model_evaluation_run": false,
+    "new_training_run": false,
+    "public_chat_deployment": false,
+    "public_dataset_upload": false
+  },
+  "limitations": [
+    "Queue counts are not accepted training examples or model accuracy.",
+    "The 25 pending D items are separate from the two E holds and one wording check.",
+    "Targeted diagnostic inspection does not certify the uninspected pool.",
+    "Source-corrected derivatives preserve but do not replace original references.",
+    "General conversation and other collections retain separate readiness gaps.",
+    "Public metadata does not disclose or relicense private research artifacts."
+  ]
+}

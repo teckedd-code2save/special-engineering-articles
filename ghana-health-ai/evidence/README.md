@@ -4,6 +4,39 @@
 
 **Compiled:** 16 October 2026. **Research cutoff:** 11 October 2026.
 
+**Update:** E01-E13 and `checkpoint.json` retain that historical scope. E14 and
+[the dated checkpoint](checkpoint-20261020.json) cover D49 / E48, sealed on
+20 October and checked for publication on 21 October 2026. Article 6 is the
+current progress update; historical next-step descriptions below are not live status.
+
+## E14: D49 / E48 Correction and Review Checkpoint
+
+Source locators in the research checkout:
+
+- `docs/instruction-residual-inspection-20261017.md`
+- `docs/instruction-source-adjudication-20261020.md`
+- `docs/corpus-checkpoint-20261020.md`
+- `tmp/instruction-complete-repairs/v49-20261020/report.json`
+- `tmp/instruction-meaning-assessments/v48-20261020/report.json`
+- The corresponding sealed manifests and private storage receipts
+- `tmp/instruction-review/d49-e48-20261020/progress.json`
+
+Supports the 699-item accounting, 646 replacements, 28 retained targets,
+25 pending items, 674 scoped assessments and 122 source-corrected derivatives.
+The pending D items and E holds are distinct populations. The 671 scoped agent
+passes are not independent semantic validation, model accuracy or admission.
+
+Manifest and review-queue byte hashes were recomputed locally on 21 October
+and matched the values in the dated checkpoint. Saved remote verification
+receipts were inspected; this publication check did not launch another upload
+or GPU run. The authenticated review was rechecked without writing reviews.
+The public [application PR #41](https://github.com/teckedd-code2save/ghana-health-ai/pull/41)
+contains code and aggregate progress, not the private corrections. Its CI and
+security checks passed; it remained an open draft at this publication check.
+
+No historical benchmark values are revised by E14. Twelve new projection
+tests are software-verification results, not an improvement in model quality.
+
 ## Evidence Policy
 
 The articles are original synthesis of project records, not a verbatim export
