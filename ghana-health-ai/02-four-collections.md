@@ -1,8 +1,14 @@
-# What Is Actually in the Corpus
+# What a Million-Row Twi Corpus Actually Teaches a Model
 
 [Series index](README.md) | [Previous](01-research-journey.md) | [Next](03-correction-engineering.md)
 
 **Written 16 October 2026. Counts are dated snapshots, not a live inventory.**
+
+One of our Twi response collections contained 108 training examples. That sounded small but usable for a pilot until we counted the assistant targets: **625 content tokens in total**. Of the 108 answers, 104 were five words or fewer.
+
+The surrounding English questions and passages made the records look much richer than the Twi response supervision they supplied. A model could read substantial context while receiving very little practice writing a useful Twi answer.
+
+That finding changed our accounting. We separated the corpus into four roles: language learning, meaning alignment, direct conversation, and specialisation. The same source can support more than one role, but its derivatives do not become independent evidence. Here is what each collection contained and where its apparent capacity broke down.
 
 ## Start With Units, Not Headlines
 

@@ -1,152 +1,164 @@
-# Ship Without CI: An SSH + Compose + GHCR Release Runbook
+# Deploying Without GitHub Actions: Keeping GHCR in the Release Pipeline
 
-[Series index](README.md) | [Next: From runbook to capability](02-mcp-release-tool.md)
+[Series index](README.md) | [Next: Turning the release runbook into MCP tools](02-mcp-release-tool.md)
 
-**Written 18 October 2026. Part 1 of 2 — the manual fallback path when CI is down.**
+*By Edward Kwabena Twumasi. Original account: 18 October 2026. Edited: 22 October 2026.*
 
-*By Edward Twumasi*
+GitHub Actions was unavailable, but that did not mean GitHub was unavailable. The source repository still worked. GitHub Container Registry (GHCR) still accepted images. Our Docker Compose workload was still running.
 
----
+We needed another place to build and test the release, then a controlled way to promote the resulting images. Replacing the build runner was enough to restore that path.
 
-Your GitHub Actions run never started. Billing tripped, or the control plane that normally ships your deploys is asking for a reauth. Either way, the code is merged, tested, and sitting in `main` — and production is still running last week's image.
+This article describes the manual fallback behind that approach: identify the source, build away from the live checkout, publish to GHCR, verify the artifacts, and switch the workload with a recorded recovery path. Part 2 explains how we exposed those steps through scoped GroundControl tools and moved the build to an external sandbox.
 
-This is the runbook for that moment. It replaces exactly one broken component with a direct path, instead of rebuilding your whole delivery platform.
+## GitHub Actions and GHCR have different jobs
 
-## Separate the five concerns
+A release pipeline often bundles several services into one familiar “deploy” button. It is useful to separate them when the button stops working.
 
-A deploy that "goes through CI" is really five independent things holding hands:
+| Concern | Job | What can remain available when Actions is unavailable |
+| --- | --- | --- |
+| Source hosting | Store and identify the exact code | GitHub repository and commit SHA |
+| Build executor | Run dependency installation, tests, and image builds | An external runner or suitable workstation |
+| Registry | Store and distribute the built images | GHCR |
+| Release control | Authorise and coordinate promotion | A scoped control plane or a reviewed manual runbook |
+| Runtime | Execute the selected images | Docker Compose on the server |
 
-1. **Source** — git
-2. **Registry** — GHCR
-3. **Build executor** — GitHub Actions / CI
-4. **Control plane** — your deploy dashboard (GroundControl, etc.)
-5. **Running app** — Docker Compose on the VPS
+An Actions billing or execution problem does not, by itself, establish a GHCR outage. Registry authentication is also separate: being able to clone the repository does not establish permission to push a package.
 
-When one of them fails, you replace *that one* with a direct path. You don't rewrite the platform.
+The fallback therefore preserves GitHub source hosting and GHCR. It changes who performs the build and how the release is triggered.
 
-What still has to work, per fallback:
+It still needs network access to source hosting, base-image registries, and dependency registries. The Compose switch described here can interrupt service; no zero-downtime result is claimed.
 
-| Still working | You can |
-|---|---|
-| git + GHCR reachable | build on the box, push, pull, switch |
-| Only SSH to the server | operate the existing Compose deployment (no new build) |
-| GHCR down, images cached locally | `up -d --pull never` with pre-verified image IDs |
-| Server SSH / Docker / storage down | STOP — recover infrastructure first, no unrelated changes |
+## Start with the release record
 
-Two honest caveats up front: this is **not an offline procedure** (a new build still needs base images and npm/OS dependency registries), and it's **not zero-downtime**.
+Before changing the workload, record the current source revision, each service's image reference and image ID, the available digests, health, Compose files and overrides, runtime flags, and migration state.
 
-## The workflow
+Keep the previous image set available. Confirm disk headroom and establish one release owner so a recovered automatic rollout cannot overwrite the manual release.
 
-Variables first, because vague scripts are how servers get bricked:
+The essential identifiers are:
 
-```
-RELEASE_SHA   # explicit full SHA — never a moving tag
-APP_DIR       # prod checkout
-PROJECT       # compose project name
-REGISTRY      # e.g. ghcr.io/org
-COMPONENTS    # e.g. "api web"
-SERVICES      # compose services to switch
-KEY, HOST     # SSH
-```
+| Identifier | Purpose |
+| --- | --- |
+| Full source commit SHA | Defines which code is being built |
+| Per-image digest | Defines the exact registry artifact to run |
+| Expected image architecture | Prevents an ARM/amd64 mismatch |
+| Prior source and image set | Defines the application recovery target |
+| Compose project and explicit file list | Defines which workload will change |
+| Migration identity and compatibility | Determines whether an image rollback is sufficient |
 
-### 1. Preflight — record what is running
+A commit SHA and an image digest answer different questions. The commit identifies source; the digest identifies built content. An OCI revision label connects the artifact to its declared source, but the label alone does not prove the build used that source. Record the build provenance and test result as well.
 
-Snapshot the current state before touching anything:
+## Build outside the live checkout
 
-```bash
-ssh -T -o BatchMode=yes -o ConnectTimeout=10 -i "$KEY" "root@$HOST" '
-  cd '"$APP_DIR"' && git status --short && git rev-parse HEAD
-  docker ps --filter label=com.docker.compose.project='"$PROJECT"'
-  df -h /'
-```
+The historical manual fallback could build in a detached worktree on the server. That isolated the source tree from the live checkout, but it still consumed the server's CPU, memory, and disk. An external builder provides stronger resource separation.
 
-Record: the prior commit, both prior image digests + image IDs, service health, runtime flags, compose file identities, migration state. Check disk headroom **before** building — retain the active + rollback image pairs, and never solve space pressure with an indiscriminate `docker image prune`. Never disable host-key checking to get past an identity change.
+On whichever build machine you use, resolve and check out the explicit commit. Review the build context and `.dockerignore` so runtime credentials and unrelated files stay out of the image context.
 
-### 2. Isolate the build
-
-Build in a detached worktree so source never mixes with the live `.env`:
+The following Bash fragment illustrates a **single image** after the checkout and credentials have already been prepared. It is not a complete deployment script. Replace the image, context, and platform with values reviewed for your application.
 
 ```bash
-ssh "root@$HOST" 'cd '"$APP_DIR"' &&
-  git fetch origin main &&
-  test "$(git rev-parse origin/main)" = "'"$RELEASE_SHA"'" &&
-  git worktree add --detach "'"$APP_DIR-build-$RELEASE_SHA"'" "'"$RELEASE_SHA"'" &&
-  git -C "'"$APP_DIR-build-$RELEASE_SHA"'" diff --quiet &&
-  git -C "'"$APP_DIR-build-$RELEASE_SHA"'" diff --cached --quiet'
+set -euo pipefail
+
+: "${RELEASE_SHA:?Set the full source commit SHA}"
+: "${IMAGE_REPO:?Set the GHCR image repository}"
+: "${BUILD_CONTEXT:?Set the reviewed build context}"
+
+test "$(git rev-parse HEAD)" = "$RELEASE_SHA"
+test -z "$(git status --porcelain)"
+
+docker build --platform linux/amd64 \
+  --label "org.opencontainers.image.revision=$RELEASE_SHA" \
+  --tag "$IMAGE_REPO:$RELEASE_SHA" \
+  "$BUILD_CONTEXT"
+
+docker push "$IMAGE_REPO:$RELEASE_SHA"
 ```
 
-Build contexts must not contain credentials — review `.dockerignore` and untracked files. On an ARM workstation, pass an explicit `--platform linux/amd64`; the tested path builds natively on the x86_64 server.
+A successful build is not evidence that tests passed. Run the application's required checks in the prepared build environment and retain their exit status and output before treating the image as releasable.
 
-### 3. Build + push with a revision label
+The runner needs GHCR push permission; the runtime needs pull permission. Provision each appropriately and keep credentials out of shell history, command arguments, and published logs. Use an isolated Docker configuration where the runner requires one.
 
-```bash
-export DOCKER_CONFIG=/root/.groundcontrol/docker   # reuse existing login, never print it
-for c in $COMPONENTS; do
-  docker build --label "org.opencontainers.image.revision=$RELEASE_SHA" \
-    -t "$REGISTRY/app-$c:$RELEASE_SHA" "context-for-$c"
-  docker push "$REGISTRY/app-$c:$RELEASE_SHA"
-done
-```
+For multiple services, identify which services share an image. An API, migration job, and worker may use the same backend image with different commands. Build that image once and map its digest to all three consumers.
 
-A commit alone doesn't promise a byte-for-byte reproducible build — `npm install` vs `npm ci`, unpinned base images. Keep the actual digests.
+## Publish to GHCR, then verify what you published
 
-### 4. Verify the exact artifacts
+Tagging an image with the commit SHA makes it easier to find. Promoting its immutable digest makes the release identity precise.
 
-For each image, assert three things:
-- `Architecture == amd64`
-- the OCI revision label (`org.opencontainers.image.revision`) == `RELEASE_SHA`
-- the recorded digest appears in `RepoDigests`
+For each image, record and check:
 
-Check each image against **its own** expected revision — don't flatten a per-service check into a no-op ternary. A tag is not proof of code; the digest + revision label is.
+- The registry digest returned by the push and verified through the registry/pull path.
+- The intended runtime architecture.
+- The OCI revision label against that image's expected source revision.
+- The relevant build and test evidence.
 
-### 5. Switch
+Do not assume all services have the same expected revision. A partial release can intentionally retain one component while advancing another.
 
-```bash
-cd "$APP_DIR"
-git diff --quiet && git diff --cached --quiet
-test "$(git rev-parse HEAD)" = "$PRIOR_SHA"   # refuse a dirty or advanced checkout
-git merge --ff-only "$RELEASE_SHA"
-compose=(docker compose -p "$PROJECT" -f docker-compose.yml -f .groundcontrol/*.override.yml)
-"${compose[@]}" config --quiet                # validate WITHOUT printing resolved secrets
-"${compose[@]}" up -d --no-build $MIGRATE_SVC $SERVICES
-```
+Pinned dependencies and base images also matter. The same source commit can produce different images if upstream inputs change. Preserve the actual digest instead of assuming a SHA-shaped tag makes the build reproducible.
 
-Never invoke a generic deploy script that does `git reset --hard` over unexplained server changes. `config --quiet` only — don't paste `docker compose config` or `inspect ...Config.Env` dumps into chat; override files can carry inline secrets.
+## Prepare the switch before replacing containers
 
-### 6. Gate on health + migration exit 0
+Resolve every service to its intended digest-pinned reference, such as `ghcr.io/owner/app@sha256:...`. Prepare a release-specific Compose input or override that contains the complete image set, including shared-image consumers.
 
-Wait for every long-running service to reach `healthy`. Then assert the one-shot migration container is `exited` with `ExitCode == 0` — its inherited HTTP healthcheck is meaningless after it exits. Only after **both** do you persist the new image pins to `.env` so a later Compose recreation survives. If the health gate fails, stop: the script must not save the new pins, and it does not auto-restore already-replaced containers.
+Use the exact Compose project and explicit file order from the running deployment. Validate that configuration with `docker compose ... config --quiet`; ordinary resolved configuration output can disclose secrets.
 
-### 7. Verify the product, not just the badges
+If source-managed Compose files must advance, first reject unexplained local changes and confirm the prior checkout revision. Use a reviewed fast-forward path. A generic script that resets the checkout can destroy changes you have not accounted for.
 
-Three layers:
-- **Artifact** — SHA → digest → revision → tests
-- **Operation** — health, migration exit 0, public HTTPS/API responses, bounded log review
-- **Product** — a real authorized account / app-service check; queued jobs reaching a terminal state with a meaningful outcome
+The release-specific inputs must be available to Compose **before** recreation. An illustrative ordering is:
 
-A 200 app shell does not prove a private owner workflow works.
+1. Save the previous source, image pins, and configuration identity.
+2. Prepare and validate the candidate configuration with the new digest pins.
+3. Run migrations in the order required by the application's compatibility contract.
+4. Recreate the intended services with the candidate inputs and no build.
+5. Verify the migration result and service health.
+6. Mark the candidate as the accepted release only after verification.
 
-### 8. Record the rollback pair
+Do not write new pins only after `up` and assume the earlier command used them. Compose must receive the candidate image set during the switch. Keep acceptance of that candidate separate from preparing the inputs.
 
-Capture the prior digests + commit **before** switching. Rollback = verify prior identity → `docker pull` the prior digest-pinned refs → `up -d --no-build --no-deps` → re-verify health → persist prior pins. For a schema-changing release, image rollback is not enough — confirm the old binary can read the new schema, or run a reviewed migration recovery. Never `down -v`, drop databases, undo migrations blindly, or restore an old DB over current writes.
+## A health gate detects failure; it does not reverse it
 
-## The pitfalls that actually happened
+Check each long-running service's health. For a one-shot migration, check that the container exited with status zero; an inherited HTTP healthcheck is not the success criterion for a completed migration.
 
-- **A finished push is not success.** Use a `trap 'echo $? > /path/release.exit' EXIT` and read the marker, with unique names per release. A stale `.exit` from a prior attempt is not this attempt.
-- **git-mode `up -d --build` re-tags new code with the old image name.** The container runs new code under the old tag; a later `docker compose pull` (or a control-plane auto-redeploy) silently reverts it. For anything you need to keep, use image-mode: build with a real SHA tag, push to GHCR, then point the `.env` pins at the new tag.
-- **Compose precedence:** `environment` overrides `env_file`. Changing one file may not change the running API — check the effective flag in each consumer.
-- **A `*_IMAGE` env var inside a container is not proof of the running image.** Use `Config.Image`, image ID, digest, and OCI revision.
-- **One release owner at a time.** There is no automatic coordination between a manual SSH release and a recovered CI rollout — a stale automatic deploy can overwrite a newer manual one.
-- **"Completed" ≠ "done well."** A job can finish because useful sources ran out, not because the objective is met. Distinguish no-new-data from partial-improvement from complete.
+A failed health gate means the rollout is unacceptable. It does not mean that the old containers are still running or that the script has restored them.
 
-## Definition of done
+Recovery needs an explicit decision and the previously recorded configuration. Pull the prior digest-pinned images if necessary, recreate the intended services, and verify the result.
 
-Approved source SHA + both digests + image IDs + exact compose command + prior rollback pair + environment changes + migration result + tests + live HTTP/product checks + log window + unresolved defects + control-plane drift — all in the release record, with secrets and customer data left out.
+For schema changes, establish whether the prior application can read the new schema before relying on an image rollback. A database restore can discard writes received after the backup. It requires its own reviewed recovery procedure.
 
-## Next: the runbook becomes a capability
+## Verify a user workflow
 
-The manual path works, but it has a ceiling: whoever runs it needs an SSH key, a shell, and the nerve to type destructive commands on a production box.
+There are three useful levels of evidence:
 
-There's a better abstraction — and it's now built, not just sketched. [Part 2](02-mcp-release-tool.md) documents the scoped MCP tools (`deployment.build_publish` and `deployment.release`) that expose this exact playbook as an OAuth-gated capability with no SSH key and no unrestricted shell, plus the off-host Docker Agentic Platform build executor that moves the build entirely off the production box. The same preflight, digest verification, health gate, and rollback pair the manual path demands are still there — minus the key, and minus the build competing with production for CPU and RAM.
+| Level | Evidence |
+| --- | --- |
+| Artifact | Source SHA, image digests, architecture, revision labels, test results |
+| Operation | Container health, migration exit status, public HTTPS/API checks, bounded logs |
+| Product | An authorised user workflow and any background job reaching a useful outcome |
 
-That's the point where a "runbook" stops being a document someone reads under pressure and becomes a capability you can hand to a machine — with the same evidence and reversibility the manual path demands, minus the key.
+An HTTP 200 from the app shell says little about a private booking flow or a worker that cannot reach its database. Run a representative workflow and record partial outcomes accurately. A job ending because it exhausted useful sources is different from meeting its objective.
+
+## The failures worth preserving in the runbook
+
+Several operational details were easy to miss:
+
+**Building under an old tag creates a delayed rollback.** A local build can place new code under yesterday's image name. A later pull restores the registry's older content. Publish the new artifact and promote its digest.
+
+**Compose precedence can hide a flag change.** A service's `environment` entry overrides an `env_file` value. Verify the intended setting in every consumer without dumping secrets.
+
+**A container environment variable is not image identity.** An `API_IMAGE` value inside a container does not establish which image created it. Check the configured image reference, image ID, digest, and revision evidence.
+
+**A disconnected client leaves uncertainty.** Give every release attempt a unique operation identity and retain its terminal status. A stale exit marker from a previous attempt is not the result of this attempt.
+
+**A recovered pipeline can race the fallback.** Reconcile the normal deployment path after the manual release so it does not silently reintroduce older pins.
+
+## What the release record should leave behind
+
+A completed release record should identify the approved source, promoted digests, exact configuration and command, previous recovery set, migration outcome, tests, live checks, relevant log window, and unresolved defects.
+
+That record is what makes the fallback repeatable. GitHub Actions can be unavailable while GitHub source hosting and GHCR continue doing their jobs. The missing build executor can be replaced without discarding the registry or weakening the evidence required to ship.
+
+[Part 2: Turning the release runbook into scoped MCP tools](02-mcp-release-tool.md)
+
+## References
+
+- [GitHub: working with the Container registry](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry)
+- [Docker: Compose environment precedence](https://docs.docker.com/compose/how-tos/environment-variables/envvars-precedence/)
+- [Docker: compose up reference](https://docs.docker.com/reference/cli/docker/compose/up/)
