@@ -1,7 +1,7 @@
 # Ghana Health AI: Building a General-Purpose Twi Assistant
 
 - **Written:** 16 October 2026
-- **Latest update:** 21 October 2026, reporting the sealed 20 October D49 / E48 checkpoint
+- **Latest update:** 22 October 2026, reporting the sealed D51 / E50 checkpoint
 - **Original articles 1-5:** 11 October 2026 research snapshot, preserved as history
 - **Evidence window:** August to October 2026
 - **Status:** Ongoing research. A reliable independent Twi conversational model has not yet been demonstrated.
@@ -23,21 +23,23 @@ run more defensible.
 | [4. Benchmarks, experiments, and negative results](04-benchmarks.md) | Historical model comparisons, training recipes, before/after metrics, failed teacher qualification, and bounded speech diagnostics |
 | [5. From the current checkpoint to credible training](05-next-training-stage.md) | The execution graph, remaining gates, review strategy, export contract, and a controlled training comparison |
 | [6. From an inspection queue to 674 complete meaning handoffs](06-corpus-correction-checkpoint-20261020.md) | D49 / E48 correction progress, source-answer repairs, remaining work, durable evidence, and the live review map |
+| [7. Closing the repairable queue](07-closing-the-correction-queue-20261022.md) | D51 / E50: 697 checked candidates, two quarantined sources, scoped human feedback and the admission boundary |
 | [Evidence ledger](evidence/README.md) | Source-document locators, artifact identities, interpretation rules, and verification scope |
-| [Latest machine-readable checkpoint](evidence/checkpoint-20261020.json) | Current correction and assessment counts, artifact hashes, and explicit non-readiness flags |
+| [Latest machine-readable checkpoint](evidence/checkpoint-20261022.json) | Current correction and assessment counts, artifact hashes, and explicit non-readiness flags |
+| [October 20 checkpoint](evidence/checkpoint-20261020.json) | Previous D49 / E48 snapshot, unchanged |
 | [Historical checkpoint](evidence/checkpoint.json) | Original October 11 counts and historical model measurements, unchanged |
 
-For a meeting, read Articles 1 and 6 first, then Article 5 for the training
+For a meeting, read Articles 1 and 7 first, then Article 5 for the training
 design. For an implementation review, start with Articles 2 and 3. For a
 research-methods discussion, start with Article 4.
 
 ## The Checkpoint in One Paragraph
 
 The instruction working corpus accounts for **52,002 sources**. The targeted
-699-item correction queue now reconciles as **646 distinct replacements, 28
-retained examples, and 25 pending items**. All 674 current complete handoffs
-have a scoped same-agent meaning assessment: 671 proceed to admission review,
-two remain source-held, and one needs a focused Twi wording check. There are
+699-item correction queue now reconciles as **669 distinct replacements, 28
+retained examples, and two unavailable-source holds**. All 697 current complete
+handoffs have a scoped same-agent meaning assessment and proceed to admission
+review. The two older E holds and the focused phrase check are resolved. There are
 **zero training admissions from this pass**. These are correction-progress
 counts, not a model benchmark or certification of the uninspected corpus.
 

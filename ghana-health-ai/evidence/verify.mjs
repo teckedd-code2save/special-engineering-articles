@@ -82,10 +82,40 @@ assert.equal(checkpoint.all_four_collections_ready, false);
 assert.equal(checkpoint.reliable_independent_response_model_demonstrated, false);
 assert.equal(response.production_eligible, false);
 
+const datedCheckpoints = ["checkpoint-20261020.json", "checkpoint-20261022.json"];
+for (const name of datedCheckpoints) {
+  const dated = JSON.parse(readFileSync(join(project, "evidence", name), "utf8"));
+  const queue = dated.correction_queue;
+  const assessments = dated.meaning_assessments;
+  assert.equal(queue.distinct_replaced + queue.retained + queue.pending,
+    queue.original_work_items, `${name}: queue reconciliation`);
+  assert.equal(queue.pending_source_reference_adjudications + queue.pending_contextual_examples,
+    queue.pending, `${name}: unresolved categories`);
+  assert.equal(queue.distinct_replaced + queue.retained, assessments.current_complete_handoffs);
+  assert.equal(assessments.assessed + assessments.unassessed_current_handoffs,
+    assessments.current_complete_handoffs);
+  assert.equal(assessments.scoped_agent_pass_to_F + assessments.source_hold +
+    assessments.focused_twi_check + (assessments.return_to_D ?? 0), assessments.assessed);
+  assert.equal(Object.values(dated.handoff_target_kinds).reduce((sum, count) => sum + count, 0),
+    assessments.current_complete_handoffs, `${name}: task types`);
+  assert.equal(queue.training_admissions, 0);
+  assert.equal(assessments.independent_native_certification, false);
+  assert.equal(assessments.human_whole_example_approvals_claimed_by_pass, 0);
+  assert.equal(assessments.meaning_accuracy_estimate, null);
+  assert.equal(dated.all_four_collections_ready, false);
+  assert.equal(dated.reliable_independent_response_model_demonstrated, false);
+  for (const key of ["D_manifest_sha256", "E_manifest_sha256", "review_queue_sha256"]) {
+    assert.match(dated.evidence[key], /^[a-f0-9]{64}$/, `${name}: ${key}`);
+  }
+  for (const key of ["new_model_evaluation_run", "new_training_run", "public_chat_deployment",
+    "public_dataset_upload"]) assert.equal(dated.publication_verification[key], false);
+}
+
 console.log(JSON.stringify({
   markdown_files: files.length,
   local_links_verified: links,
   mermaid_blocks: diagrams,
   aggregate_reconciliation: "passed",
+  dated_checkpoints_verified: datedCheckpoints,
   scope: "Article metadata and local links only; not corpus or model quality. Mermaid rendering is a separate check."
 }, null, 2));

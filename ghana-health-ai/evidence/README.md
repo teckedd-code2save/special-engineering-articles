@@ -429,6 +429,14 @@ current production routing, or assert that the full application CI is green.
 
 ## Update Rules
 
+The [22 October checkpoint](checkpoint-20261022.json) supersedes the correction
+counts, not the historical benchmark results. Article 7 describes D50/E49 and
+D51/E50, 23 new source replacements, two old-target revisions, scoped Paris
+phrase feedback and two unchanged unavailable-source examples. No new model
+evaluation is inferred from those changes. The private implementation report is
+`ghana-health-ai/docs/corpus-checkpoint-20261022.md`; its two manifest identities
+are reproduced in the dated metadata without exposing corpus contents.
+
 - Advance the evidence cutoff only when new work has an actual result.
 - Preserve historical metrics and record changed evaluation contracts separately.
 - Keep proposal, automatic screen, native review, and training admission distinct.
