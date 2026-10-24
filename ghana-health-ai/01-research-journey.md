@@ -4,6 +4,10 @@
 
 **Written 16 October 2026. Research evidence through 11 October 2026.**
 
+This article preserves that historical snapshot. See the
+[20 October correction checkpoint](06-corpus-correction-checkpoint-20261020.md)
+for subsequent execution, current counts and remaining work.
+
 ## The Product Question
 
 Ghana Health AI began with a straightforward expectation: a person should be

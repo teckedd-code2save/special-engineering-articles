@@ -4,6 +4,60 @@
 
 **Compiled:** 16 October 2026. **Research cutoff:** 11 October 2026.
 
+**Update:** E01-E13 and `checkpoint.json` retain that historical scope. E14 and
+[the dated checkpoint](checkpoint-20261020.json) cover D49 / E48, sealed on
+20 October and checked for publication on 21 October 2026. Article 6 is the
+historical progress update; historical next-step descriptions below are not live status.
+
+## E15: Admission And Resumable Export Verification
+
+[Article 8](../08-from-corrections-to-training-admission-20261022.md) and the
+[October 24 checkpoint](checkpoint-20261024.json) cover F/G and I/J. Inputs:
+
+- `tmp/instruction-admission/fg-v1-20261022/report.json` and its exact-target ledger
+- `tmp/instruction-export/inputs-v1-20261022` and its 98-file path/role contract
+- The completed V5 parent journal, V6 corrected scan and independent cold reconstruction
+- `tmp/instruction-export/release-v6-20261024`, its manifest, report and seal
+- Consistent snapshot manifests, full-size restore checks and private storage receipts
+- `docs/corpus-checkpoint-20261024.md` and the authenticated execution-map projection
+
+The 1,520,077 comparison records include repeated source views. They are not
+1,520,077 unique newly approved training examples. The historical million-row
+ledger is comparison material. The 696 provisional admissions became 333 final
+eligible sources and 366 total exclusions from 699 originals. All 18 artifacts
+matched independent reconstruction before sealing; 26 release/replay/review
+files passed remote backup hash checks. A populated directory alone is not a seal.
+Software tests and deterministic reconstruction do not establish native fluency,
+clinical safety or model improvement. No historical benchmark score is changed.
+
+## E14: D49 / E48 Correction and Review Checkpoint
+
+Source locators in the research checkout:
+
+- `docs/instruction-residual-inspection-20261017.md`
+- `docs/instruction-source-adjudication-20261020.md`
+- `docs/corpus-checkpoint-20261020.md`
+- `tmp/instruction-complete-repairs/v49-20261020/report.json`
+- `tmp/instruction-meaning-assessments/v48-20261020/report.json`
+- The corresponding sealed manifests and private storage receipts
+- `tmp/instruction-review/d49-e48-20261020/progress.json`
+
+Supports the 699-item accounting, 646 replacements, 28 retained targets,
+25 pending items, 674 scoped assessments and 122 source-corrected derivatives.
+The pending D items and E holds are distinct populations. The 671 scoped agent
+passes are not independent semantic validation, model accuracy or admission.
+
+Manifest and review-queue byte hashes were recomputed locally on 21 October
+and matched the values in the dated checkpoint. Saved remote verification
+receipts were inspected; this publication check did not launch another upload
+or GPU run. The authenticated review was rechecked without writing reviews.
+The public [application PR #41](https://github.com/teckedd-code2save/ghana-health-ai/pull/41)
+contains code and aggregate progress, not the private corrections. Its CI and
+security checks passed; it remained an open draft at this publication check.
+
+No historical benchmark values are revised by E14. Twelve new projection
+tests are software-verification results, not an improvement in model quality.
+
 ## Evidence Policy
 
 The articles are original synthesis of project records, not a verbatim export
@@ -395,6 +449,14 @@ training, perform a new semantic evaluation, review every corpus row, verify
 current production routing, or assert that the full application CI is green.
 
 ## Update Rules
+
+The [22 October checkpoint](checkpoint-20261022.json) supersedes the correction
+counts, not the historical benchmark results. Article 7 describes D50/E49 and
+D51/E50, 23 new source replacements, two old-target revisions, scoped Paris
+phrase feedback and two unchanged unavailable-source examples. No new model
+evaluation is inferred from those changes. The private implementation report is
+`ghana-health-ai/docs/corpus-checkpoint-20261022.md`; its two manifest identities
+are reproduced in the dated metadata without exposing corpus contents.
 
 - Advance the evidence cutoff only when new work has an actual result.
 - Preserve historical metrics and record changed evaluation contracts separately.

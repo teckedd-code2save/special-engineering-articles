@@ -4,6 +4,10 @@
 
 **Plan relative to the 11 October 2026 checkpoint. Not a claim of subsequent execution.**
 
+For steps completed since this plan, see the
+[D49 / E48 progress update](06-corpus-correction-checkpoint-20261020.md).
+The historical graph below is preserved; the update contains the current graph.
+
 ## The Immediate Objective
 
 Produce a versioned, quality-qualified training release that addresses the

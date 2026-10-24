@@ -4,6 +4,10 @@
 
 **Checkpoint: 11 October 2026. Verification revisit: 16 October 2026.**
 
+This article preserves that historical snapshot. See the
+[20 October correction checkpoint](06-corpus-correction-checkpoint-20261020.md)
+for subsequent execution, current counts and remaining work.
+
 ## A Correction Is More Than a Better-Looking Sentence
 
 A dataset correction needs an identity, evidence, an exact target version,

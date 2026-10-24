@@ -4,6 +4,10 @@
 
 **Written 16 October 2026. Counts are dated snapshots, not a live inventory.**
 
+This article preserves the original research snapshot. See the
+[20 October correction checkpoint](06-corpus-correction-checkpoint-20261020.md)
+for subsequent execution, current counts and remaining work.
+
 ## Start With Units, Not Headlines
 
 The source inventory has 1,178,118 rows, the instruction working collection has

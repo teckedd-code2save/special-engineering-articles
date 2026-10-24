@@ -1,7 +1,8 @@
 # Ghana Health AI: Building a General-Purpose Twi Assistant
 
 - **Written:** 16 October 2026
-- **Research checkpoint:** 11 October 2026
+- **Latest update:** 24 October 2026, reporting F/G/I/J completion and a sealed instruction research export
+- **Original articles 1-5:** 11 October 2026 research snapshot, preserved as history
 - **Evidence window:** August to October 2026
 - **Status:** Ongoing research. A reliable independent Twi conversational model has not yet been demonstrated.
 
@@ -21,21 +22,30 @@ run more defensible.
 | [3. Repairing training data without rewriting history](03-correction-engineering.md) | Applied corrections, source identities, protected groups, queue consolidation, resumability, and verification |
 | [4. Benchmarks, experiments, and negative results](04-benchmarks.md) | Historical model comparisons, training recipes, before/after metrics, failed teacher qualification, and bounded speech diagnostics |
 | [5. From the current checkpoint to credible training](05-next-training-stage.md) | The execution graph, remaining gates, review strategy, export contract, and a controlled training comparison |
+| [6. From an inspection queue to 674 complete meaning handoffs](06-corpus-correction-checkpoint-20261020.md) | D49 / E48 correction progress, source-answer repairs, remaining work, durable evidence, and the live review map |
+| [7. Closing the repairable queue](07-closing-the-correction-queue-20261022.md) | D51 / E50: 697 checked candidates, two quarantined sources, scoped human feedback and the admission boundary |
+| [8. From corrections to training admission](08-from-corrections-to-training-admission-20261022.md) | F/G decisions, full-corpus comparison, inherited holdouts, resumable verification and bounded recovery |
 | [Evidence ledger](evidence/README.md) | Source-document locators, artifact identities, interpretation rules, and verification scope |
-| [Machine-readable checkpoint](evidence/checkpoint.json) | Aggregate counts, node status, selected metrics, and explicit non-readiness flags |
+| [Latest machine-readable checkpoint](evidence/checkpoint-20261024.json) | Admission, full-scan verification, release status and explicit scope limits |
+| [October 22 checkpoint](evidence/checkpoint-20261022.json) | D51 / E50 correction and assessment evidence, unchanged |
+| [October 20 checkpoint](evidence/checkpoint-20261020.json) | Previous D49 / E48 snapshot, unchanged |
+| [Historical checkpoint](evidence/checkpoint.json) | Original October 11 counts and historical model measurements, unchanged |
 
-For a meeting, read Articles 1 and 5 first. For an implementation review, start
-with Articles 2 and 3. For a research-methods discussion, start with Article 4.
+For a meeting, read Articles 1 and 8 first, then Article 5 for the training
+design. For an implementation review, start with Articles 2 and 3. For a
+research-methods discussion, start with Article 4.
 
 ## The Checkpoint in One Paragraph
 
-The instruction working corpus accounts for **52,002 sources**. A source-bound
-pass applied **24 complete correction proposals**, made limited terminology
-edits in **37 additional records**, and cleared **31,323 false empty-input
-markers**. A second pass consolidated overlapping findings into **674 distinct
-instruction work items**. The next node is a documented inspection of the
-**24,819-source unflagged sampling pool**. None of those counts certifies Twi
-accuracy, and these two passes added **zero training admissions**.
+The instruction working corpus accounts for **52,002 sources**. The targeted
+699-item correction queue now reconciles as **669 distinct replacements, 28
+retained examples, and two unavailable-source holds**. All 697 current complete
+handoffs have a scoped same-agent meaning assessment. F/G records **696 provisional
+research admissions and three exclusions**. The full 1,520,077-record comparison
+scan and independent byte-identical reconstruction passed. V6 is sealed with
+**333 eligible research sources and 366 total exclusions**, separately partitioned
+by task. This is not a model benchmark, 333 natural conversations or certification
+of the uninspected corpus. No training or model-performance gain is claimed.
 
 ## Publication Boundaries
 
@@ -45,7 +55,9 @@ No private recordings, user conversations, corpus row dumps, credentials, or
 model weights are included. Evidence hashes identify private artifacts; they
 do not make those artifacts publicly accessible or establish their truth.
 
-The series is a dated snapshot, not the requested live execution dashboard.
-That interactive dashboard had not been implemented at this checkpoint.
+The articles are dated snapshots. The authenticated [review page](https://ghanahealth.serendepify.com/research/corpus/?collection=responses)
+and [clickable execution map](https://ghanahealth.serendepify.com/research/corpus/progress)
+now expose the latest sealed checkpoint. Articles 1-5 retain their original
+historical scope; their then-pending steps must not be read as today's status.
 All project material is contained in this folder so the parent repository can
 host unrelated engineering articles independently.
