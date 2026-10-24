@@ -1,0 +1,53 @@
+{
+  "as_of": "2026-10-24",
+  "scope": "Selected 699-source instruction correction queue only",
+  "corrections": {"original_sources": 699, "replaced": 669, "retained": 28, "unavailable_source_holds": 2, "meaning_assessed": 697},
+  "admission": {
+    "admitted": 696,
+    "excluded": 3,
+    "task_kinds": {"language_exercise": 355, "twi_prose": 287, "code_exercise": 39, "literal_label": 14, "literal_structure": 1}
+  },
+  "export": {
+    "sealed": true,
+    "full_scan_complete": true,
+    "comparison_records": 1520077,
+    "comparison_sources": 62,
+    "pinned_input_entries": 98,
+    "exported_sources": 333,
+    "excluded_sources": 366,
+    "families": 332,
+    "partitions": {
+      "twi_prose": {"rows": 86, "assistant_tokens": 18752, "sequence_tokens": 26208},
+      "language_exercise": {"rows": 220, "assistant_tokens": 25045, "sequence_tokens": 43893},
+      "code_exercise": {"rows": 17, "assistant_tokens": 5161, "sequence_tokens": 6813},
+      "literal_label": {"rows": 9, "assistant_tokens": 373, "sequence_tokens": 1049},
+      "literal_structure": {"rows": 1, "assistant_tokens": 62, "sequence_tokens": 197}
+    },
+    "assistant_tokens": 49393,
+    "sequence_tokens": 78160,
+    "holdout_conflicts": 0,
+    "duplicate_final_messages": 0,
+    "truncated_targets": 0,
+    "synthetic_source_rows": 333,
+    "independent_reconstruction_passed": true,
+    "byte_identical_artifacts": 18,
+    "private_backup_verified": true,
+    "exclusion_groups": {"protected_overlap_or_family": 363, "specialist_hold": 1, "unverifiable_source": 2}
+  },
+  "verification": {"instruction_tests": 522, "source_recovery_tests": 6, "full_scan_snapshot_restored": true, "whole_example_human_approvals": 0},
+  "evidence": {
+    "D_manifest_sha256": "ee6f7b5679c9db31240805f5bc2ad317b35dd38d2cdf6655ce02300d6be4a1f7",
+    "E_manifest_sha256": "5f4da484f8bc33d9a127ffe65dc45833c0b7f197de25e873f3567db59ee26e2c",
+    "admission_manifest_sha256": "42f030aec60f39344a19381d303947f2efa6983e88a44b7e182d49f2f55913a7",
+    "inventory_manifest_sha256": "c10bd74ba2053c5ccc757f55905c992211b3d54e856807a862c7f55052ec0531",
+    "export_manifest_sha256": "0cd8d8ddb3b63e6cc3cbd92efeb2ce55d1c1c1e17baa8d7f3bf5bf52142c501c",
+    "export_report_sha256": "dc9d911303136aa987c13237970057a0e8e52ec48f9165668afc0b15ec54009c"
+  },
+  "all_four_collections_ready": false,
+  "independent_native_certification": false,
+  "clinical_certification": false,
+  "new_training_run": false,
+  "new_model_evaluation_run": false,
+  "public_dataset_upload": false,
+  "public_chat_deployment": false
+}

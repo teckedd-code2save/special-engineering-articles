@@ -7,7 +7,28 @@
 **Update:** E01-E13 and `checkpoint.json` retain that historical scope. E14 and
 [the dated checkpoint](checkpoint-20261020.json) cover D49 / E48, sealed on
 20 October and checked for publication on 21 October 2026. Article 6 is the
-current progress update; historical next-step descriptions below are not live status.
+historical progress update; historical next-step descriptions below are not live status.
+
+## E15: Admission And Resumable Export Verification
+
+[Article 8](../08-from-corrections-to-training-admission-20261022.md) and the
+[October 24 checkpoint](checkpoint-20261024.json) cover F/G and I/J. Inputs:
+
+- `tmp/instruction-admission/fg-v1-20261022/report.json` and its exact-target ledger
+- `tmp/instruction-export/inputs-v1-20261022` and its 98-file path/role contract
+- The completed V5 parent journal, V6 corrected scan and independent cold reconstruction
+- `tmp/instruction-export/release-v6-20261024`, its manifest, report and seal
+- Consistent snapshot manifests, full-size restore checks and private storage receipts
+- `docs/corpus-checkpoint-20261024.md` and the authenticated execution-map projection
+
+The 1,520,077 comparison records include repeated source views. They are not
+1,520,077 unique newly approved training examples. The historical million-row
+ledger is comparison material. The 696 provisional admissions became 333 final
+eligible sources and 366 total exclusions from 699 originals. All 18 artifacts
+matched independent reconstruction before sealing; 26 release/replay/review
+files passed remote backup hash checks. A populated directory alone is not a seal.
+Software tests and deterministic reconstruction do not establish native fluency,
+clinical safety or model improvement. No historical benchmark score is changed.
 
 ## E14: D49 / E48 Correction and Review Checkpoint
 

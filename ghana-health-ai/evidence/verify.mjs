@@ -111,11 +111,46 @@ for (const name of datedCheckpoints) {
     "public_dataset_upload"]) assert.equal(dated.publication_verification[key], false);
 }
 
+const admissionCheckpoint = JSON.parse(readFileSync(join(project, "evidence/checkpoint-20261024.json"), "utf8"));
+const { corrections: q, admission: a, export: release } = admissionCheckpoint;
+assert.equal(q.replaced + q.retained + q.unavailable_source_holds, q.original_sources);
+assert.equal(q.replaced + q.retained, q.meaning_assessed);
+assert.equal(a.admitted + a.excluded, q.original_sources);
+assert.equal(Object.values(a.task_kinds).reduce((sum, n) => sum + n, 0), a.admitted);
+assert.equal(release.comparison_records, 1520077);
+assert.equal(release.comparison_sources, 62);
+assert.equal(release.pinned_input_entries, 98);
+assert.equal(release.full_scan_complete, true);
+if (release.sealed) {
+  assert.equal(release.independent_reconstruction_passed, true);
+  assert.equal(release.exported_sources + release.excluded_sources, q.original_sources);
+  assert.equal(Object.values(release.partitions).reduce((sum, p) => sum + p.rows, 0), release.exported_sources);
+  for (const key of ["assistant_tokens", "sequence_tokens"]) {
+    assert.equal(Object.values(release.partitions).reduce((sum, p) => sum + p[key], 0), release[key]);
+  }
+  assert.equal(Object.values(release.exclusion_groups).reduce((sum, n) => sum + n, 0), release.excluded_sources);
+  assert.equal(release.byte_identical_artifacts, 18);
+  assert.equal(release.private_backup_verified, true);
+  for (const key of ["holdout_conflicts", "duplicate_final_messages", "truncated_targets"]) assert.equal(release[key], 0);
+  assert.match(admissionCheckpoint.evidence.export_manifest_sha256, /^[a-f0-9]{64}$/);
+} else {
+  assert.equal(release.exported_sources, null);
+  assert.equal(release.excluded_sources, null);
+  assert.equal(admissionCheckpoint.evidence.export_manifest_sha256, null);
+}
+for (const [key, value] of Object.entries(admissionCheckpoint.evidence)) {
+  if (key !== "export_manifest_sha256") assert.match(value, /^[a-f0-9]{64}$/);
+}
+assert.equal(admissionCheckpoint.verification.whole_example_human_approvals, 0);
+for (const key of ["all_four_collections_ready", "independent_native_certification",
+  "clinical_certification", "new_training_run", "new_model_evaluation_run",
+  "public_dataset_upload", "public_chat_deployment"]) assert.equal(admissionCheckpoint[key], false);
+
 console.log(JSON.stringify({
   markdown_files: files.length,
   local_links_verified: links,
   mermaid_blocks: diagrams,
   aggregate_reconciliation: "passed",
-  dated_checkpoints_verified: datedCheckpoints,
+  dated_checkpoints_verified: [...datedCheckpoints, "checkpoint-20261024.json"],
   scope: "Article metadata and local links only; not corpus or model quality. Mermaid rendering is a separate check."
 }, null, 2));
