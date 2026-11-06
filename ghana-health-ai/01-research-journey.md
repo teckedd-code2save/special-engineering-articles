@@ -1,8 +1,16 @@
-# Why a Large Corpus Did Not Immediately Produce a Reliable Twi Assistant
+# A Million Rows Were Not Enough to Build a Reliable Twi Assistant
 
 [Series index](README.md) | [Next: What is actually in the corpus](02-four-collections.md)
 
 **Written 16 October 2026. Research evidence through 11 October 2026.**
+
+The October training run looked promising in the loss chart. After one epoch over 21,170 examples, Twi response validation loss fell from 2.23 to 1.46. Then we read the replies. A greeting still looped. Negation and follow-up corrections still failed. Repetition flags rose from three to five on the fixed development suite.
+
+We kept the checkpoint private and did not promote it.
+
+That decision captures the central difficulty of Ghana Health AI: collecting text, completing training, and producing plausible Twi are different from building an assistant people can rely on. Our frozen inventory contained 1,178,118 rows. The useful question became what those rows actually taught the model.
+
+This article follows the evidence that moved the work from repeated adaptation experiments toward source recovery and data repair. The figures describe the October 11 research checkpoint; they do not describe a model released today.
 
 ## The Product Question
 
@@ -30,7 +38,7 @@ a narrow set of templates. [Evidence E01](evidence/README.md#e01-research-object
 A voice system has several independently fallible stages:
 
 ```mermaid
-flowchart LR
+flowchart TD
     A["Speech input"] --> B["Transcription"]
     B --> C["Meaning and conversation state"]
     C --> D["Direct answer or tool decision"]
@@ -54,7 +62,7 @@ measurement even if it made the demonstration smoother.
 Speech remains important, but the current collection pass deliberately does
 not modify ASR, TTS, or production routing. It works on text supervision and
 understanding. Historical voice measurements are reported separately in
-[Article 4](04-benchmarks.md#speech-diagnostics-are-separate).
+[Article 4](evidence/experiment-ledger.md#speech-diagnostics-are-separate).
 
 ## What the Experiments Actually Established
 

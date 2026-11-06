@@ -16,11 +16,12 @@ run more defensible.
 
 | Article | Focus |
 | --- | --- |
-| [1. Why a large corpus did not immediately produce a reliable Twi assistant](01-research-journey.md) | Product goal, research scope, false signals of progress, and the shift toward source-grounded data repair |
-| [2. What is actually in the corpus](02-four-collections.md) | The four collections, exact capacity measurements, source recovery, missing fields, and why row counts cannot be added indiscriminately |
-| [3. Repairing training data without rewriting history](03-correction-engineering.md) | Applied corrections, source identities, protected groups, queue consolidation, resumability, and verification |
-| [4. Benchmarks, experiments, and negative results](04-benchmarks.md) | Historical model comparisons, training recipes, before/after metrics, failed teacher qualification, and bounded speech diagnostics |
-| [5. From the current checkpoint to credible training](05-next-training-stage.md) | The execution graph, remaining gates, review strategy, export contract, and a controlled training comparison |
+| [1. A Million Rows Were Not Enough to Build a Reliable Twi Assistant](01-research-journey.md) | Product goal, research scope, false signals of progress, and the shift toward source-grounded data repair |
+| [2. What a Million-Row Twi Corpus Actually Teaches a Model](02-four-collections.md) | The four collections, exact capacity measurements, source recovery, missing fields, and why row counts cannot be added indiscriminately |
+| [3. How We Repair Training Data Without Losing Its History](03-correction-engineering.md) | Applied corrections, source identities, protected groups, queue consolidation, resumability, and verification |
+| [4. Lower Loss, Worse Replies: What Our Twi Model Experiments Taught Us](04-benchmarks.md) | Historical model comparisons, training recipes, before/after metrics, failed teacher qualification, and bounded speech diagnostics |
+| [5. What We Need Before the Next Twi Fine-Tuning Run](05-next-training-stage.md) | The execution graph, remaining gates, review strategy, export contract, and a controlled training comparison |
+| [Complete experiment ledger](evidence/experiment-ledger.md) | Full dated recipes, scores, negative results, and speech diagnostics |
 | [Evidence ledger](evidence/README.md) | Source-document locators, artifact identities, interpretation rules, and verification scope |
 | [Machine-readable checkpoint](evidence/checkpoint.json) | Aggregate counts, node status, selected metrics, and explicit non-readiness flags |
 

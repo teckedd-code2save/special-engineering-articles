@@ -1,8 +1,14 @@
-# Repairing Training Data Without Rewriting History
+# How We Repair Training Data Without Losing Its History
 
 [Series index](README.md) | [Previous](02-four-collections.md) | [Next](04-benchmarks.md)
 
 **Checkpoint: 11 October 2026. Verification revisit: 16 October 2026.**
+
+We had complete correction proposals sitting outside the dataset that a future training job would read. The originals were preserved, but the working targets still contained known defects.
+
+The missing piece was the path from a proposed edit to an exact, traceable derivative. It had to preserve the original, apply the intended change, carry restrictions forward, and keep a software check separate from a language-quality decision.
+
+At the October 11 checkpoint, that path accounted for 52,002 instruction sources. It applied 24 complete existing corrections, made narrow terminology edits in 37 additional records, and removed 31,323 false empty-context markers. It admitted zero new examples to training. Those outcomes are compatible: repairing a working copy and qualifying it for training are separate decisions.
 
 ## A Correction Is More Than a Better-Looking Sentence
 
@@ -144,12 +150,12 @@ The remaining **999** items are routed intact: 961 conversation messages and
 
 The complete source accounting is:
 
-```text
-52,002 instruction sources
-  = 26,509 protected or excluded
-  +    674 direct correction/review work items
-  + 24,819 sources in the unflagged sampling pool
-```
+| Source disposition | Records |
+| --- | ---: |
+| Protected or excluded | 26,509 |
+| Direct correction/review work items | 674 |
+| Unflagged sampling pool | 24,819 |
+| Total instruction sources | 52,002 |
 
 Within the 674 work items, 16 already have complete edits, 20 have partial
 terminology edits, and 638 have no substantive edit. The other previously

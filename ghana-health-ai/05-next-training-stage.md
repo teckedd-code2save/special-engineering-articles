@@ -1,8 +1,14 @@
-# From the Current Checkpoint to Credible Training
+# What We Need Before the Next Twi Fine-Tuning Run
 
 [Series index](README.md) | [Previous: Benchmarks](04-benchmarks.md)
 
 **Plan relative to the 11 October 2026 checkpoint. Not a claim of subsequent execution.**
+
+The previous response run lowered validation loss and left important conversational failures unresolved. Running the same recipe again would be easy. Learning whether better supervision changes those failures requires a more deliberate handoff.
+
+The next milestone is a versioned training release whose sources, corrections, exclusions, and target tokens can be inspected. Only then can we compare a candidate with the untouched foundation and the saved response checkpoint under matched conditions.
+
+This is the plan from the October 11 checkpoint. It explains how the completed repair work leads to a controlled experiment; it does not report that the experiment has run.
 
 ## The Immediate Objective
 
@@ -23,18 +29,18 @@ requested for the project had not been built at this checkpoint.
 
 ```mermaid
 flowchart TD
-    A["A: DONE<br/>Materialise working corrections<br/>52,002 instruction sources"]
-    B["B: DONE<br/>Consolidate findings<br/>674 instruction work items"]
-    C["C: NEXT<br/>Inspect unflagged samples<br/>24,819-source population"]
-    D["D: PENDING<br/>Correct complete examples"]
-    E["E: PENDING<br/>Check meaning and source support"]
+    A["A: DONE: Materialise working corrections: 52,002 instruction sources"]
+    B["B: DONE: Consolidate findings: 674 instruction work items"]
+    C["C: NEXT: Inspect unflagged samples: 24,819-source population"]
+    D["D: PENDING: Correct complete examples"]
+    E["E: PENDING: Check meaning and source support"]
     F{"F: Evidence sufficient?"}
-    H["H: CONDITIONAL<br/>Focused Twi adjudication"]
-    Q["Q: CONDITIONAL<br/>Keep unresolved material out"]
-    G["G: PENDING<br/>Explicit admission decision"]
-    I["I: PENDING<br/>Validate export and boundaries"]
-    J["J: PENDING<br/>Private versioned training release"]
-    K["K: LATER<br/>Controlled training and evaluation"]
+    H["H: CONDITIONAL: Focused Twi adjudication"]
+    Q["Q: CONDITIONAL: Keep unresolved material out"]
+    G["G: PENDING: Explicit admission decision"]
+    I["I: PENDING: Validate export and boundaries"]
+    J["J: PENDING: Private versioned training release"]
+    K["K: LATER: Controlled training and evaluation"]
     A --> B --> C --> D --> E --> F
     B --> D
     F -->|Sufficient| G
