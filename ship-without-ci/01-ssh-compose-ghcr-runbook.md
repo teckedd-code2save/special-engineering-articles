@@ -4,15 +4,23 @@
 
 *By Edward Kwabena Twumasi. Original account: 18 October 2026. Practical walkthrough revised: 7 November 2026.*
 
-I ran out of GitHub Actions credits. My code was still on GitHub, my images could still live in GitHub Container Registry (GHCR), and my application was still running. What I had lost was the runner that normally connected those pieces.
+I ran out of GitHub Actions credits, but GitHub still hosted my code and GHCR still accepted images. I replaced the build runner and kept the checks, registry, and release process.
 
-I needed somewhere else to check the code, build the images, and publish them. I also needed a release procedure that could identify exactly what was being deployed and recover if it failed.
+This is the manual fallback. Part 2 automates it through [GroundControl](https://github.com/teckedd-code2save/groundcontrol), my self-hosted control plane for agent-driven deployment operations. Triggering these checks on each change restores continuous integration.
 
-The answer was to keep the checks and replace the executor. This article walks through the manual version. Part 2 turns the same workflow into an agentic operation through GroundControl and an external Docker cloud sandbox.
+## Where each step runs
 
-Strictly speaking, running these commands by hand is a fallback for the CI pipeline. It becomes continuous integration again when a runner or orchestrator triggers the same checks on each change. “Without GitHub Actions” does not mean “without tests.”
+| Platform | Software | Work |
+| --- | --- | --- |
+| Your Mac: build machine | Docker Desktop running Linux containers, Buildx, Git, Bash, Node.js, npm, jq | Select source, run checks, build the Linux image, push it to GHCR |
+| GitHub and GHCR: hosted services | Repository hosting and container registry | Store source and images |
+| Your Linux amd64 VPS: runtime host | Docker Engine, Compose plugin, Bash, curl; existing application configuration | Pull images, run migrations, recreate services, verify health |
 
-## 1. Know which part stopped working
+A Linux PC with Docker Engine and Buildx can replace the Mac. On a Mac, start Docker Desktop before running commands. The image targets Linux amd64 even if the Mac uses Apple Silicon. Check the builder's platform support below.
+
+Steps 1–7 run in Terminal on your Mac. Step 8 opens an SSH session to the VPS. Step 9 switches between those two sessions; steps 10–12 run on the VPS.
+
+## 1. Check the build machine
 
 | Tool | Role in this workflow |
 | --- | --- |
@@ -24,9 +32,7 @@ Strictly speaking, running these commands by hand is a fallback for the CI pipel
 | Docker Compose | Recreate the selected application services |
 | Bash, jq, curl | Coordinate commands, read metadata, and check the public endpoint |
 
-GitHub Actions and GHCR are separate services. An exhausted Actions allowance does not by itself prevent a permitted client from pushing to GHCR.
-
-**Check on the build machine:**
+**Mac Terminal:**
 
 ```bash
 git --version
@@ -35,31 +41,25 @@ docker buildx version
 jq --version
 ```
 
-**Expected result:** Git, the Docker client and daemon, Buildx, and jq are available. The machine also needs the application's test runtime. For the Node.js example below, that means a compatible Node.js and npm installation.
+**Check:** all tools are available. This Node.js example also needs Node.js and npm. Run `docker buildx inspect --bootstrap` to confirm the builder supports your runtime platform, especially on an ARM workstation.
 
-An ARM workstation must have a builder that supports the target platform. Check with `docker buildx inspect --bootstrap`. If it cannot build for the runtime architecture, use a suitable native builder rather than assuming `--platform` supplies missing emulation.
+## 2. Select the commit and image
 
-## 2. Define the example before copying commands
+This example uses an existing Compose application with a Node.js backend and Dockerfile in `backend/`. One image serves `api`, `worker`, and the one-shot `migrate` command. API and worker healthchecks must already exist; dependencies stay running.
 
-This walkthrough builds one backend image consumed by three existing Compose services:
+Use one **Bash** session for build steps and another for host steps. Replace sample account names, paths, service names, and URLs with yours.
 
-- `api`: the long-running HTTP service.
-- `worker`: a long-running background worker.
-- `migrate`: a one-shot migration service with its command already defined.
+A **commit SHA** is Git's full identifier for one saved code revision. In the local checkout you want to release, `git rev-parse HEAD` prints it. `HEAD` means the currently checked-out commit. Commit and push your changes first so the builder can fetch them.
 
-The application already runs under Compose. Its database and other dependencies remain running. This example does not change the base Compose files, runtime secrets, or deployment topology. Both long-running services must define meaningful healthchecks.
-
-Run the build steps in one **Bash** session on the build machine. Run the host steps in a second **Bash** session after SSH. Replace the sample values first; `example`, `YOUR_FULL_COMMIT_SHA`, and `app.example.com` are placeholders.
-
-**Build machine:**
+**Mac Terminal, inside your application repository:**
 
 ```bash
 bash
 set -euo pipefail
 umask 077
 
-REPO_URL='https://github.com/example/my-app.git'
-RELEASE_SHA='YOUR_FULL_COMMIT_SHA'
+REPO_URL="$(git remote get-url origin)"
+RELEASE_SHA="$(git rev-parse HEAD)"
 IMAGE_REPO='ghcr.io/example/my-app-api'
 GHCR_USER='example'
 TARGET_PLATFORM='linux/amd64'
@@ -69,11 +69,17 @@ RELEASE_DIR="$HOME/release-records/$RELEASE_SHA"
 mkdir -p "$RELEASE_DIR"
 ```
 
-**Expected result:** the SHA check passes and a private release-record directory exists. A placeholder SHA fails the check deliberately. The commands below assume this repository keeps its Node.js backend and Dockerfile in `backend/`; adapt those paths to your repository.
+**Check:** `RELEASE_SHA` contains the full SHA and the release directory exists. To select the latest fetched `main` instead, run `git fetch origin` followed by `RELEASE_SHA="$(git rev-parse origin/main)"` before setting `RELEASE_DIR`. On GitHub, open the intended commit and use **Copy full SHA**.
+
+Print the value for the later host session:
+
+```bash
+printf '%s\n' "$RELEASE_SHA"
+```
 
 ## 3. Check out the exact source
 
-**Run on the build machine:**
+**Mac Terminal:**
 
 ```bash
 BUILD_ROOT="$(mktemp -d)"
@@ -86,15 +92,13 @@ test -z "$(git status --porcelain)"
 git rev-parse HEAD > "$RELEASE_DIR/source-sha.txt"
 ```
 
-**Expected result:** the checkout is detached at the selected commit and has no local changes. A private repository needs its own Git authentication; GHCR login does not grant repository access.
-
-Inspect `backend/.dockerignore` and the complete build context before building. Exclude runtime environment files and credentials. A clean Git status alone does not establish a safe image context.
+**Check:** the checkout matches the SHA and is clean. Authenticate Git separately for a private repository. Review `backend/.dockerignore` and exclude credentials and runtime environment files from the build context.
 
 ## 4. Run the checks before building
 
-Here is a concrete Node.js example. It assumes the backend's package scripts are named `lint` and `test`, and that tests terminate. Replace them with your project's actual required checks; provision isolated test dependencies where needed.
+Use your actual check commands. This example requires terminating `lint` and `test` scripts and any isolated test dependencies.
 
-**Run on the build machine, from the detached checkout:**
+**Mac Terminal, inside the detached checkout:**
 
 ```bash
 (
@@ -107,17 +111,13 @@ Here is a concrete Node.js example. It assumes the backend's package scripts are
 printf 'passed\n' > "$RELEASE_DIR/checks.status"
 ```
 
-**Expected result:** every command exits zero and `checks.status` contains `passed`. Because this Bash session uses `pipefail`, a failing check is not hidden by a successful `tee`. Do not continue after a failure.
-
-These checks validate the selected source. If the application also needs tests inside the packaged image, run those separately before promotion. Passing host-side tests does not establish that the runtime image contains everything the application needs.
+**Check:** every command exits zero. `pipefail` preserves failures through `tee`. These tests run on the Mac; run any required Linux container tests before promotion too.
 
 ## 5. Authenticate to GHCR
 
-Outside an Actions workflow, configure a GHCR-supported credential. GitHub documents a personal access token (classic), with `write:packages` for publishing and `read:packages` for pulling private images, subject to the account's package access and any organisation requirements.
+Use a GitHub personal access token (classic) with `write:packages` and access to the chosen package. The runtime host needs pull access, normally `read:packages` for private images. Complete any organisation authorisation requirements.
 
-The following interactive example reads the token without echoing it. It uses the build machine's configured Docker context and credential store.
-
-**Run on the build machine:**
+**Mac Terminal:**
 
 ```bash
 read -r -s -p 'GHCR push token: ' GHCR_TOKEN
@@ -127,15 +127,11 @@ printf '%s' "$GHCR_TOKEN" |
 unset GHCR_TOKEN
 ```
 
-**Expected result:** login succeeds. That establishes authentication; the subsequent push establishes access to the chosen package.
-
-Docker's credential store or configuration retains the login. Keep it private and outside build contexts and uploads. On a disposable build machine, log out after the final pull verification with `docker logout ghcr.io`. The runtime host should have a separately provisioned pull credential. An Actions `GITHUB_TOKEN` is not automatically available on an unrelated machine.
+**Check:** login succeeds; the push below verifies package access. Keep Docker credentials outside build contexts and uploads. On a disposable runner, use `docker logout ghcr.io` after verification.
 
 ## 6. Build and publish once
 
-Build from the exact source, label the revision, publish to GHCR, and save Buildx metadata.
-
-**Run on the build machine, from the detached checkout:**
+**Mac Terminal, inside the detached checkout:**
 
 ```bash
 test "$(cat "$RELEASE_DIR/checks.status")" = 'passed'
@@ -150,13 +146,11 @@ docker buildx build \
   ./backend 2>&1 | tee "$RELEASE_DIR/build.log"
 ```
 
-**Expected result:** the build and push complete successfully, and the metadata file contains the published image digest. This is one shared backend image, not three independent builds for `api`, `worker`, and `migrate`.
-
-Keep the logs private until reviewed. Do not assume arbitrary application build output is free of secrets. If your Dockerfile needs a nondefault path, pass `--file ./backend/path/to/Dockerfile` explicitly.
+**Check:** the push succeeds and metadata contains the digest. The shared backend image is built once. Review logs before sharing. For a custom Dockerfile path, add `--file ./backend/path/to/Dockerfile`.
 
 ## 7. Verify the artifact by digest
 
-**Run on the build machine:**
+**Mac Terminal:**
 
 ```bash
 DIGEST="$(jq -er '."containerimage.digest"' \
@@ -175,11 +169,11 @@ test "$(docker image inspect "$IMAGE_REF" \
 printf '%s\n' "$IMAGE_REF" > "$RELEASE_DIR/image-ref.txt"
 ```
 
-**Expected result:** GHCR serves the digest-pinned artifact, and its architecture and declared source revision match the release. Change the architecture assertion if your runtime is not amd64.
+**Check:** GHCR serves the digest-pinned image with the expected architecture and revision label. Adjust both platform and architecture assertions for a different runtime.
 
-The digest identifies the built content. A revision label is a declaration, not independent proof of source provenance. Retain the checkout identity, checks, and build evidence. Unpinned dependencies or base images can still produce a different artifact from the same commit.
+Keep the source, test, and build evidence alongside the digest. A revision label alone does not prove provenance, and unpinned build inputs can change the output.
 
-Prepare a small, non-secret override that pins every shared-image consumer:
+Pin all consumers to that image:
 
 ```bash
 cat > "$RELEASE_DIR/candidate.yml" <<EOF
@@ -193,19 +187,19 @@ services:
 EOF
 ```
 
-**Expected result:** all three services reference the same immutable image. Applications with separate frontend and backend images need separate verified digests for each.
+**Check:** all three services share the digest. Repeat verification for each separately built image.
 
 ## 8. Record the running deployment before changing it
 
-Coordinate one release owner. Pause competing automatic rollouts through your normal operating process, then connect to the host using the established SSH identity. Keep host-key verification enabled.
+Coordinate one release owner and pause competing rollouts. Connect using the host's established SSH identity.
 
-**From your workstation:**
+**Mac Terminal:**
 
 ```bash
 ssh deploy@app.example.com
 ```
 
-**On the runtime host, start a fresh Bash session:**
+**Linux VPS, inside the SSH session:**
 
 ```bash
 bash
@@ -214,7 +208,7 @@ umask 077
 
 APP_DIR='/srv/my-app'
 PROJECT='my-app'
-RELEASE_SHA='YOUR_FULL_COMMIT_SHA'
+read -r -p 'Paste the commit SHA printed on the build machine: ' RELEASE_SHA
 [[ "$RELEASE_SHA" =~ ^[0-9a-f]{40}$ ]]
 
 HOST_RECORD="$HOME/release-records/$RELEASE_SHA"
@@ -229,9 +223,9 @@ base=(docker compose -p "$PROJECT" -f compose.yml)
 df -h "$APP_DIR"
 ```
 
-**Expected result:** configuration validation passes, the correct project appears, and disk headroom is sufficient. `config --quiet` validates without printing resolved secrets.
+**Check:** configuration validates, the project is correct, and disk space is sufficient. Keep resolved secrets out of logs.
 
-Capture the current shared image. This simplified recovery example requires the existing API and worker to use the same digest-pinned reference.
+Capture the previous image. This example requires API and worker to share one digest-pinned reference:
 
 ```bash
 API_ID="$("${base[@]}" ps -q api)"
@@ -259,15 +253,15 @@ services:
 EOF
 ```
 
-**Expected result:** the previous shared digest and running image IDs are recorded. If the services differ, have replicas, or use mutable tags, stop and capture a verified per-service recovery set instead. Do not substitute today's value of an old tag for the image that actually created the running container.
+**Check:** the prior digest and running image IDs are recorded. For differing images, replicas, or mutable tags, capture a verified per-service recovery set before proceeding.
 
 ## 9. Transfer and validate the candidate
 
-**From the build-machine session**, set the actual login and the absolute record directory created on the runtime host:
+**Mac Terminal, back in the build session:** set the VPS login and its absolute record directory. Change `/home/deploy` if that user has a different home directory:
 
 ```bash
 DEPLOY_TARGET='deploy@app.example.com'
-REMOTE_RECORD='/home/deploy/release-records/YOUR_FULL_COMMIT_SHA'
+REMOTE_RECORD="/home/deploy/release-records/$RELEASE_SHA"
 
 scp "$RELEASE_DIR/candidate.yml" \
     "$RELEASE_DIR/image-ref.txt" \
@@ -275,7 +269,7 @@ scp "$RELEASE_DIR/candidate.yml" \
     "$DEPLOY_TARGET:$REMOTE_RECORD/"
 ```
 
-**Back on the runtime host:**
+**Linux VPS, back in the SSH session:**
 
 ```bash
 test "$(cat "$HOST_RECORD/source-sha.txt")" = "$RELEASE_SHA"
@@ -285,13 +279,13 @@ candidate=("${base[@]}" -f "$HOST_RECORD/candidate.yml")
 "${candidate[@]}" pull api worker migrate
 ```
 
-**Expected result:** the host can pull the candidate images using its registry access. No application container has been replaced yet. If base configuration or runtime inputs changed since the snapshot, reassess before continuing.
+**Check:** validation and pulls succeed before any container switch. Reassess if runtime configuration changed after the snapshot.
 
 ## 10. Run the migration, then switch
 
-This example assumes a reviewed, backward-compatible migration that can run while the old application remains live. The migration service's existing command must exit nonzero on failure. A breaking schema migration needs a different, application-specific sequence.
+Use this order only for backward-compatible migrations that can run alongside the old application. The migration command must exit nonzero on failure. Plan breaking schema changes separately.
 
-**Run on the runtime host:**
+**Linux VPS, inside the SSH session:**
 
 ```bash
 "${candidate[@]}" run --rm --no-deps -T migrate \
@@ -301,13 +295,11 @@ printf 'passed\n' > "$HOST_RECORD/migration.status"
 "${candidate[@]}" up -d --no-build --no-deps api worker
 ```
 
-**Expected result:** the one-shot migration exits zero, then Compose recreates the API and worker from the candidate configuration. A failed migration stops the Bash session before the switch. Inspect its log privately; do not retry a partially applied migration without understanding its state.
-
-The override is supplied **before** recreation. Updating an image variable afterward would not change which image the earlier command selected. This operation can interrupt service and does not claim zero downtime.
+**Check:** migration exits zero before recreation. A failure stops the session; inspect its state before retrying. Compose receives candidate pins before the switch, which can interrupt service.
 
 ## 11. Check health and a real user outcome
 
-**Run on the runtime host:**
+**Linux VPS, inside the SSH session:**
 
 ```bash
 "${candidate[@]}" up -d --no-build --no-deps \
@@ -328,25 +320,19 @@ curl --fail --silent --show-error \
   'https://app.example.com/health'
 ```
 
-**Expected result:** both services are healthy, both run the selected image reference, and the application-specific public health endpoint succeeds. Substitute your real endpoint.
-
-Then perform one authorised user workflow: for example, submit a test plan and verify the background job reaches a useful terminal outcome. A successful app-shell request cannot prove that private workflows or workers function.
-
-Only after those checks pass, record acceptance:
+**Check:** both services are healthy, their image references match, and your real health endpoint succeeds. Then run an authorised user workflow, including its background job if applicable. Record acceptance after it passes:
 
 ```bash
 date -u '+%Y-%m-%dT%H:%M:%SZ' > "$HOST_RECORD/accepted-at.txt"
 ```
 
-Make the accepted override the deployment's normal input through your existing release configuration. Future recreations must use the same image set and Compose file order. The override does not become permanent merely because the one command used it.
+Persist the accepted image set through your normal deployment configuration. Future recreations must use the same pins and Compose file order.
 
 ## 12. Recover explicitly if the candidate fails
 
-A health gate detects a failed release; it does not restore the prior containers.
+Confirm the prior application remains compatible with the migrated database before restoring its images. A failed health check does not perform recovery automatically.
 
-Before running this recovery example, confirm that the prior binary remains compatible with the database after any migration. This restores application images only.
-
-**Run in a fresh Bash session on the runtime host**, restoring `APP_DIR`, `PROJECT`, `HOST_RECORD`, and the exact `base` array from step 8:
+**Linux VPS, in a fresh Bash session:** restore `APP_DIR`, `PROJECT`, `HOST_RECORD`, and the exact `base` array from step 8:
 
 ```bash
 cd "$APP_DIR"
@@ -358,17 +344,15 @@ rollback=("${base[@]}" -f "$HOST_RECORD/prior.yml")
   --wait --wait-timeout 120 api worker
 ```
 
-**Expected result:** the prior application images are running. Repeat the explicit health and image checks from step 11 against the references in `prior.yml`, then repeat the public and user-workflow checks. Reconcile the accepted deployment inputs afterward.
+**Check:** repeat step 11 against the image references in `prior.yml`, including health, public, and user-workflow checks. Reconcile the accepted deployment inputs.
 
-If the schema is incompatible, use the reviewed database recovery procedure. Do not treat deleting volumes or restoring an old database over new writes as an image rollback.
+An incompatible schema requires a separate database recovery plan. Restoring an old database may discard new writes.
 
 ## What survived the lost credits
 
-The source stayed on GitHub. The image stayed in GHCR. The checks, source identity, image verification, health gate, and recovery record remained part of the release.
+GitHub kept the source and GHCR kept the images. Another executor ran the checks and build. The release still recorded its source, artifact, verification, and recovery target.
 
-What changed was the executor and the way we triggered it. I could ship while GitHub Actions was unavailable, with explicit evidence for which code had been checked, which image had been published, and which workload had actually changed.
-
-The next step was to expose that procedure to an agent without handing the agent an unrestricted production shell.
+Next, I exposed those steps through GroundControl so an agent could coordinate the pipeline.
 
 [Part 2: Agentic CI Without GitHub Actions](02-mcp-release-tool.md)
 
