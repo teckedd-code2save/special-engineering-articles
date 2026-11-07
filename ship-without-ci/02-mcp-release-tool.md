@@ -4,21 +4,21 @@
 
 *By Edward Kwabena Twumasi. Historical result: 18 October 2026. Tool examples and references revised: 7 November 2026.*
 
-I had run out of GitHub Actions credits. GitHub still hosted the source, and GitHub Container Registry (GHCR) could still store the images. What needed replacing was the build executor. The manual path in Part 1 supplied another build executor and a controlled release procedure. The next step was to make that procedure callable by an agent.
+[GroundControl](https://github.com/teckedd-code2save/groundcontrol) is a self-hosted control plane I built to connect AI agents to applications running on infrastructure I manage. Through the Model Context Protocol (MCP) and OAuth, agents can inspect deployments, request builds, and promote releases within the access I grant them. GroundControl manages the infrastructure credentials and executes those operations.
 
-GroundControl exposes separate operations to build and publish an artifact, then promote an existing artifact. In the recorded October 18 run, an external sandbox built two images for RentAWeekend in roughly three and a half minutes. Production stayed unchanged.
+When I ran out of GitHub Actions credits, I kept GitHub for source hosting and GHCR for images, then used GroundControl to coordinate an external build executor. The manual procedure from Part 1 became a set of tools an agent could call from a compatible client.
 
-The boundary matters: the agent can request a release operation within an OAuth grant without receiving the server's SSH key or an unrestricted shell. GroundControl and its executor still need infrastructure credentials; the design changes where those credentials live and what the agent can ask them to do.
+In the recorded October 18 run, a Docker cloud sandbox built and published two images for RentAWeekend in roughly three and a half minutes. That build left production unchanged; promotion is a separate operation.
 
-## What makes the workflow agentic?
+## How the agent runs the pipeline
 
-An agent selects an authorised deployment, resolves the intended source, requests a build, inspects its operation evidence, and decides whether the result meets the release criteria. It can then request a separate promotion within its grant and verify the outcome.
+The agent starts by inspecting the deployment and resolving the source commit. It requests a build, follows the returned operation, and checks the resulting image digests and test evidence. Once the build meets the release criteria and promotion is authorised, it requests the release and verifies the outcome.
 
-The build and release machinery is deterministic. The model's judgement does not grant access, make a skipped test pass, or turn an unfinished operation into success. Here “agentic” describes tool-driven orchestration of the pipeline; it does not mean unrestricted autonomy or a replacement CI product.
+GroundControl enforces deployment access and executes the build and release steps. Each operation retains its status, results, and evidence, so the agent can resume inspection after a disconnected session. The external sandbox supplies the build compute, and GHCR stores the images.
 
-### Name each service and tool
+### Tools in the pipeline
 
-| Component | Exact name used here | Responsibility |
+| Component | Tool or service | Role |
 | --- | --- | --- |
 | Source hosting | GitHub repository and GitHub App installation access | Supply the selected private repository and commit |
 | Optional agent-side source access | GitHub MCP Server or the client's GitHub connector | Read commits, files, and pull requests; tool names depend on the installed integration |
@@ -34,11 +34,11 @@ The build and release machinery is deterministic. The model's judgement does not
 | Image builder and runtime | Docker / BuildKit / Compose | Build images and apply the selected runtime configuration |
 | Alternative investigated | Daytona | Provide the particular sandbox configuration evaluated in the historical probe |
 
-The cloud build provider in this account is **Docker Agentic Platform**. It is not GitHub Actions, GHCR, or the GitHub MCP Server. GHCR is the registry, not the computer performing the build.
+**Docker Agentic Platform** supplies the cloud build environment. GitHub supplies the source, GHCR stores the images, and GroundControl coordinates the operations.
 
-GitHub's official MCP server is a useful agent-side source interface, but the saved build record establishes a GitHub App-authenticated clone, not that this particular MCP server was used. A client-specific name such as `github_fetch_file` is also not a universal MCP operation. Discover the connected tool schema rather than copying a wrapper name from another client.
+The recorded build used GitHub App installation access to clone the private repository. An agent can also use GitHub's official MCP server or its client's GitHub connector to inspect source before requesting the build. Those integrations expose their own tool names and schemas.
 
-## The Two Tools
+## Build and release operations
 
 `deployment.build_publish` builds an exact commit SHA, tags the images with that SHA, pushes them to GHCR, verifies the digest, and optionally runs the test command. It returns `{ images: [{ service, ref, digest }] }` and does **not** touch the running workload.
 
@@ -50,9 +50,9 @@ Splitting build from release matters for one reason: a build must not change wha
 
 First connect a compatible MCP client to your GroundControl instance, complete its OAuth flow, and choose the deployments the grant may access. Use the tool names and schemas advertised by that connected instance.
 
-These are **MCP tool argument examples**, not Bash commands, HTTP endpoints, or a log of another successful deployment. Choose the named tool in your connected MCP client and supply its JSON arguments. Replace every `<...>` value with real data obtained from your account or a previous tool response.
+The JSON blocks below supply arguments to the named MCP tools in your connected client. Replace each `<...>` value with data from your account or a previous tool response.
 
-The examples follow the currently exposed GroundControl tool schemas. The measured build later in this article remains the October 18 run; adding a test-gated example does not retroactively mean that historical run exercised tests or promotion.
+These examples use GroundControl's exposed tool schemas as of 7 November 2026. The October build result is reported separately below.
 
 ### 1. Inspect an allowed deployment
 
@@ -137,7 +137,7 @@ Call `operation.get` with the **release** operation ID, then inspect the deploym
 
 A recorded rollback pair is recovery information. It does not establish that a schema-changing rollback or a zero-downtime release has been demonstrated.
 
-## The OAuth Contract
+## Deployment access through OAuth
 
 The tools use OAuth Authorization Code with PKCE (S256). The grant defines the agent's access; the agent does not receive an SSH key:
 
@@ -148,7 +148,7 @@ The tools use OAuth Authorization Code with PKCE (S256). The grant defines the a
 
 The agent requests a scoped operation. GroundControl executes the authorised work using credentials held by the control plane and its executor.
 
-## The Build Executor: Why a Sandbox, and Why Docker AP
+## Building in a Docker cloud sandbox
 
 The naive version of `build_publish` builds on the VPS, right next to the running app. A `docker compose build` there competes with production for CPU and RAM; an uncapped build is how a deploy tool "hijacks resources" and destabilizes the host it is supposed to protect. There are two builders worth distinguishing: `buildkit` (the default: a dedicated, resource-capped BuildKit builder on the host) and `docker-agentic` (the off-host sandbox below). The BuildKit path got its own reliability pass: it now uses the same isolated Docker configuration across builder discovery, registry login, publishing, and pull-to-verify, and it publishes the selected Compose targets directly from BuildKit rather than through a sidecar build.
 
@@ -165,7 +165,7 @@ The build has separate clone and per-image phases, followed by cleanup, driven t
 
 In this implementation, the control plane passed tokens through stdin. That describes its transport into the sandbox; it is not a guarantee that arbitrary downstream processes cannot expose them. Review clone configuration, process arguments, retained files, and redacted logs as separate credential-handling boundaries.
 
-### Inspect the Docker cloud tooling explicitly
+### Check the cloud connection
 
 **Run on the control-plane machine with the Docker Sandboxes CLI installed:**
 
@@ -183,13 +183,13 @@ The recorded executor used this creation command:
 sbx --cloud create shell --platform linux/amd64
 ```
 
-That is **historical syntax**, not a claim that every current CLI accepts the same flags. Check `sbx create --help` and the official cloud documentation for your version, and verify the resulting architecture and Docker-daemon capability before a real build. The currently published CLI reference has evolved since this run.
+This is the CLI syntax used in the October run. For your installed version, check `sbx create --help` and the official cloud documentation, then verify the sandbox architecture and Docker-daemon capability before building.
 
 The walkthrough above deliberately lets GroundControl manage creation, credential handoff, execution, and cleanup. Do not independently run the sandbox command and assume the MCP operation will adopt that sandbox.
 
 Daytona's current documentation also describes Docker-capable configurations. The failed historical default-sandbox probe is not evidence that Daytona cannot build images in any configuration.
 
-## The Bugs the End-to-End Test Surfaced
+## Integration failures and fixes
 
 Driving the implemented tool against the private RentAWeekend deployment surfaced six real failures, each fixed:
 
@@ -207,7 +207,7 @@ Driving the implemented tool against the private RentAWeekend deployment surface
 
 These failures surfaced while exercising the integrated path. Focused tests can preserve the fixes, but a passing type check had not established that the whole workflow worked.
 
-## Measured Result
+## The build result
 
 A real `deployment.build_publish` against the RentAWeekend deployment (private repo, `f1e33a80801d4ab990c6e2508019275626c7786e`, `builder=docker-agentic`) produced, in one sandbox and roughly three and a half minutes:
 
@@ -218,7 +218,7 @@ A real `deployment.build_publish` against the RentAWeekend deployment (private r
 
 The sandbox was destroyed afterward, and the production workload was never touched.
 
-## Build Evidence, Not Just a Digest
+## Build logs and verification evidence
 
 A verified registry artifact has a precise content identity. Its digest does not establish that tests passed or that the application behaves correctly. A follow-on pass made the operation's evidence as complete as the manual runbook demanded:
 
@@ -226,13 +226,13 @@ A verified registry artifact has a precise content identity. Its digest does not
 - **One test run per distinct image.** Requested tests execute once per distinct image, not once per service, with both output streams recorded, so an `api`/`migrate`/`worker` image is tested once, not three times.
 - **Shared image variables advance together.** On release, a variable now matches even when the Compose file declares a default or a required-value message (`${API_IMAGE:-fallback}`, `${API_IMAGE?error}`), so the `api` and `worker` references move to the same digest instead of one silently lagging.
 
-## What This Does and Does Not Prove
+## Results and remaining validation
 
 The recorded run demonstrated cloning private source, building and publishing two images in an external sandbox, mapping shared service images, and cleaning up the sandbox. It did not switch the production workload. That is evidence for the build path, not a completed demonstration of every release and recovery guarantee.
 
 Not yet proven end-to-end, and the next nodes: a zero-downtime switch, a test-gated promotion on a live change (the tests path is wired to run once per distinct image with full evidence, but was not exercised against a live deployment in this series), and rollback of a schema-changing release. Those are separate from "does the isolated builder work," and they should be measured by exercising the complete operation and inspecting its evidence.
 
-## The boundary that remains operational
+## Keeping the build path operational
 
 Replacing GitHub Actions does not remove authentication dependencies. The external builder still needs valid provider access, the source clone needs repository access, and publishing needs GHCR push permission. Failure in any one of those credentials can block the next run even after a successful historical build. Keep each phase's error and operation state visible so “build failed” does not conceal whether cloning, provider authentication, testing, or publishing failed.
 

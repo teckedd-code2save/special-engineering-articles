@@ -383,4 +383,3 @@ The next step was to expose that procedure to an agent without handing the agent
 - [npm ci](https://docs.npmjs.com/cli/commands/npm-ci), [Bash](https://www.gnu.org/software/bash/manual/bash.html), and [jq](https://jqlang.org/manual/).
 - [OpenSSH manuals](https://www.openssh.com/manual.html) for SSH/SCP and [curl](https://curl.se/docs/manpage.html) for HTTP checks.
 
-The commands are an adaptable walkthrough, not a newly executed deployment of this example application. The historical deployment evidence remains in Part 2.
