@@ -10,9 +10,9 @@ Five articles on building a Twi assistant, from misleading dataset totals to sou
 
 Start with [A Million Rows Were Not Enough to Build a Reliable Twi Assistant](ghana-health-ai/01-research-journey.md). For the experimental lessons, read [Lower Loss, Worse Replies](ghana-health-ai/04-benchmarks.md). The full numerical ledger remains available alongside the articles.
 
-## Deploying Without GitHub Actions
+## I Ran Out of GitHub Actions Credits
 
-Two articles on replacing an unavailable GitHub Actions runner while continuing to use GitHub source hosting and GHCR.
+CI without GitHub Actions: a practical release walkthrough and an agentic MCP workflow, while continuing to use GitHub source hosting and GHCR.
 
 [Read the series](ship-without-ci/README.md)
 
