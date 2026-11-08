@@ -21,3 +21,7 @@ The seven source articles remain in their project folders. The full historical b
 Publication URLs will be recorded here after the platform confirms publication. No live DEV or Medium URL has yet been verified.
 
 External copies must use absolute source/evidence links and platform-compatible formatting. A Mermaid source block should become an image or a prose explanation on a platform that cannot render it. Medium tables need an equivalent readable representation if the editor does not preserve them.
+
+## GroundControl update: 8 November 2026
+
+[Revised articles and publication pack](groundcontrol/README.md), including validation results and the remaining staging rehearsal.
