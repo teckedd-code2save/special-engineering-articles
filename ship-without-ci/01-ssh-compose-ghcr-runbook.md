@@ -2,11 +2,17 @@
 
 [Series index](README.md) | [Next: Agentic CI with scoped MCP tools](02-mcp-release-tool.md)
 
-*By Edward Kwabena Twumasi. Original account: 18 October 2026. Practical walkthrough revised: 7 November 2026.*
+*By Edward Kwabena Twumasi. Original account: 18 October 2026. Practical walkthrough revised: 8 November 2026.*
 
 I ran out of GitHub Actions credits, but GitHub still hosted my code and GHCR still accepted images. I replaced the build runner and kept the checks, registry, and release process.
 
-This is the manual fallback. Part 2 automates it through [GroundControl](https://github.com/teckedd-code2save/groundcontrol), my self-hosted control plane for agent-driven deployment operations. Triggering these checks on each change restores continuous integration.
+**CI beyond quotas:** keep the checks and artifacts while choosing another build machine. This is the manual fallback. Part 2 automates it through [GroundControl](https://github.com/teckedd-code2save/groundcontrol), my self-hosted control plane for agent-driven deployment operations. Triggering these checks on each change restores continuous integration.
+
+## Before you begin
+
+Start with an existing application that already runs under Compose. You need repository access, permission to publish its GHCR package, SSH access to its Linux VPS, and a recovery plan for its data. This guide upgrades that deployment; it does not provision a new VPS, database or domain. Try it on staging first.
+
+For the commands below, confirm `backend/package-lock.json`, `backend/Dockerfile`, terminating `lint` and `test` scripts, and Compose services named `api`, `worker` and `migrate`. Replace all three names consistently if yours differ. The runtime Compose file must supply the migration command and healthchecks. Database and queue dependencies must already be running because this guide uses `--no-deps`.
 
 ## Where each step runs
 
@@ -39,6 +45,8 @@ git --version
 docker version
 docker buildx version
 jq --version
+node --version
+npm --version
 ```
 
 **Check:** all tools are available. This Node.js example also needs Node.js and npm. Run `docker buildx inspect --bootstrap` to confirm the builder supports your runtime platform, especially on an ARM workstation.
@@ -218,6 +226,7 @@ cd "$APP_DIR"
 base=(docker compose -p "$PROJECT" -f compose.yml)
 # Add every existing override to this array, in its original order.
 
+docker compose version
 "${base[@]}" config --quiet
 "${base[@]}" ps > "$HOST_RECORD/before.txt"
 df -h "$APP_DIR"
@@ -254,6 +263,19 @@ EOF
 ```
 
 **Check:** the prior digest and running image IDs are recorded. For differing images, replicas, or mutable tags, capture a verified per-service recovery set before proceeding.
+
+Before pulling a private image, authenticate **on the VPS as the same user that runs Compose**. A login on your Mac does not authenticate this host:
+
+```bash
+GHCR_USER='example'
+read -r -s -p 'GHCR pull token: ' GHCR_PULL_TOKEN
+printf '\n'
+printf '%s' "$GHCR_PULL_TOKEN" |
+  docker login ghcr.io --username "$GHCR_USER" --password-stdin
+unset GHCR_PULL_TOKEN
+```
+
+Use a token with `read:packages` and access to the package. Public images can be pulled anonymously.
 
 ## 9. Transfer and validate the candidate
 
@@ -326,15 +348,32 @@ curl --fail --silent --show-error \
 date -u '+%Y-%m-%dT%H:%M:%SZ' > "$HOST_RECORD/accepted-at.txt"
 ```
 
-Persist the accepted image set through your normal deployment configuration. Future recreations must use the same pins and Compose file order.
+Persist the accepted pins in the application's deployment directory:
+
+```bash
+install -m 600 "$HOST_RECORD/candidate.yml" "$APP_DIR/release-images.yml"
+```
+
+Configure every future rollout to append `-f "$APP_DIR/release-images.yml"` after the same base Compose files. This file does not become active merely because it exists; update your normal deploy command or automation to include it. Keep `prior.yml` in the release record for recovery.
 
 ## 12. Recover explicitly if the candidate fails
 
 Confirm the prior application remains compatible with the migrated database before restoring its images. A failed health check does not perform recovery automatically.
 
-**Linux VPS, in a fresh Bash session:** restore `APP_DIR`, `PROJECT`, `HOST_RECORD`, and the exact `base` array from step 8:
+**Linux VPS, in a fresh Bash session:** use the same release SHA and Compose file order recorded in step 8:
 
 ```bash
+bash
+set -euo pipefail
+umask 077
+APP_DIR='/srv/my-app'
+PROJECT='my-app'
+read -r -p 'Release SHA to recover from: ' RELEASE_SHA
+[[ "$RELEASE_SHA" =~ ^[0-9a-f]{40}$ ]]
+HOST_RECORD="$HOME/release-records/$RELEASE_SHA"
+base=(docker compose -p "$PROJECT" -f compose.yml)
+# Add the same original overrides used in step 8, in the same order.
+test -s "$HOST_RECORD/prior.yml"
 cd "$APP_DIR"
 rollback=("${base[@]}" -f "$HOST_RECORD/prior.yml")
 
@@ -344,7 +383,28 @@ rollback=("${base[@]}" -f "$HOST_RECORD/prior.yml")
   --wait --wait-timeout 120 api worker
 ```
 
-**Check:** repeat step 11 against the image references in `prior.yml`, including health, public, and user-workflow checks. Reconcile the accepted deployment inputs.
+Verify the prior image instead of comparing against the failed candidate:
+
+```bash
+PRIOR_IMAGE="$(awk '/image:/ {gsub(/"/, "", $2); print $2; exit}' "$HOST_RECORD/prior.yml")"
+[[ "$PRIOR_IMAGE" =~ @sha256:[0-9a-f]{64}$ ]]
+for service in api worker; do
+  container_id="$("${rollback[@]}" ps -q "$service")"
+  test -n "$container_id"
+  test "$(docker inspect "$container_id" --format '{{.Config.Image}}')" = "$PRIOR_IMAGE"
+  test "$(docker inspect "$container_id" --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}missing{{end}}')" = 'healthy'
+done
+curl --fail --silent --show-error --connect-timeout 10 --max-time 30 \
+  'https://app.example.com/health'
+```
+
+Repeat your user workflow. Only after it passes, persist the recovered pins:
+
+```bash
+install -m 600 "$HOST_RECORD/prior.yml" "$APP_DIR/release-images.yml"
+```
+
+Ensure subsequent deployment commands include that override last.
 
 An incompatible schema requires a separate database recovery plan. Restoring an old database may discard new writes.
 

@@ -1,6 +1,6 @@
 # I Ran Out of GitHub Actions Credits: CI Without GitHub Actions
 
-*By Edward Kwabena Twumasi. Historical account: 18 October 2026. Edited: 7 November 2026.*
+*By Edward Kwabena Twumasi. Historical account: 18 October 2026. Edited: 8 November 2026.*
 
 I ran out of GitHub Actions credits while GitHub source hosting and GHCR remained usable. This two-part series describes how we replaced the build executor, preserved the registry, and separated building an image from promoting it.
 
@@ -16,3 +16,7 @@ The first article now includes a step-by-step Bash walkthrough with inputs, exec
 The existing folder name is retained to preserve repository links. “Without GitHub Actions” describes the scope more accurately than “without CI”: tests and release checks remain part of the workflow.
 
 No credentials, runtime environment files, or customer data are included. Historical image identities establish which artifacts the account discusses; they do not certify current service or builder availability.
+
+## Publication copies and review
+
+[Medium and DEV copies, corrections and live rehearsal checklist](../publication/groundcontrol/README.md). The source and command review is complete; a fresh staging rehearsal is still required before calling the whole workflow end-to-end tested.

@@ -1,0 +1,19 @@
+{
+  "date": "2026-11-08",
+  "groundcontrol_revision": "575da5ca8edc866847d74d426eac367683dfbc70",
+  "checks": "Bash parsing, JSON parsing, current implementation review, official Docker/GHCR documentation review. No live build or release executed.",
+  "articles": [
+    {
+      "article": "01-ssh-compose-ghcr-runbook",
+      "sha256": "f777529ece5328481c4aa38e172226b35392907bce587a9824861af2779937a3",
+      "bash_blocks": 22,
+      "json_blocks": 0
+    },
+    {
+      "article": "02-mcp-release-tool",
+      "sha256": "b90b9a6d47fac72ebcf09264216a5b2a0abb75963c89d01d3ebf7286c0b9ab46",
+      "bash_blocks": 5,
+      "json_blocks": 6
+    }
+  ]
+}
